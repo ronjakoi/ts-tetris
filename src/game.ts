@@ -1,31 +1,9 @@
+import { PLAYFIELD_HEIGHT, PLAYFIELD_WIDTH, CANVAS_COLORS } from "./constants.js";
+import { TileType, Vec2, TetrominoMove } from "./types.js";
+
 window.addEventListener("load", startGame);
 
-const PLAYFIELD_HEIGHT = 20;
-const PLAYFIELD_WIDTH = 10;
-
-enum TileType {
-    Empty = 0x00,
-    LightBlue = 0x01,
-    DarkBlue = 0x02,
-    Orange = 0x03,
-    Yellow = 0x04,
-    Green = 0x05,
-    Red = 0x06,
-    Magenta = 0x07,
-}
-
-const CANVAS_COLORS: { [key in TileType]: string } = {
-    [TileType.Empty]: "black",
-    [TileType.LightBlue]: "cyan",
-    [TileType.DarkBlue]: "#1E90FF",
-    [TileType.Orange]: "orange",
-    [TileType.Yellow]: "yellow",
-    [TileType.Green]: "green",
-    [TileType.Red]: "red",
-    [TileType.Magenta]: "magenta",
-};
-
-class TileMatrix {
+export class TileMatrix {
     tiles: TileType[];
     height: number;
     width: number;
@@ -67,15 +45,15 @@ class TileMatrix {
     }
 }
 
-class Playfield {
+export class Playfield {
     tiles: TileMatrix;
     height: number;
     width: number;
 
-    constructor() {
-        const mtx = Array(PLAYFIELD_WIDTH * PLAYFIELD_HEIGHT).fill(TileType.Empty);
-        this.tiles = new TileMatrix(mtx, PLAYFIELD_WIDTH, PLAYFIELD_WIDTH);
-        [this.height, this.width] = [this.tiles.height, this.tiles.width];
+    constructor(width?: number, height?: number) {
+        [this.width, this.height] = [height ? height : PLAYFIELD_HEIGHT, width ? width : PLAYFIELD_HEIGHT];
+        const mtx = Array(this.width * this.height).fill(TileType.Empty);
+        this.tiles = new TileMatrix(mtx, this.width, this.height);
     }
 
     overlay = (other: TileMatrix | Tetromino, position?: Vec2): TileMatrix => this.tiles.overlay(other);
@@ -93,15 +71,7 @@ class Playfield {
     get = (x: number, y: number): TileType => this.tiles.get(x, y);
 }
 
-type Vec2 = [number, number];
-
-enum TetrominoMove {
-    Left,
-    Right,
-    Down
-}
-
-class Tetromino {
+export class Tetromino {
     rotation: number;
     tiles: TileMatrix;
     public width: number;
@@ -135,7 +105,7 @@ class Tetromino {
 }
 
 
-const tetrominoFactory = {
+export const tetrominoFactory = {
     templates: [
         {
             name: "T",
@@ -182,7 +152,15 @@ const tetrominoFactory = {
         }
     ],
     getRandom: function (): Tetromino {
-        const t = this.templates[Math.floor(Math.random() * this.templates.length)];
+        return this.getByIdx(Math.floor(Math.random() * this.templates.length));
+    },
+    getByName: function (name: string): Tetromino | undefined {
+        //this.templates.forEach(x => { console.debug(`${x.name} === ${name} == ${x.name === name}\n`)});
+        const t = this.templates.find(x => { x.name === name });
+        return (t === undefined) ? undefined : new Tetromino(t.matrix, t.color);
+    },
+    getByIdx: function (idx: number): Tetromino {
+        const t = this.templates[idx];
         return new Tetromino(t.matrix, t.color);
     }
 }
@@ -192,16 +170,21 @@ function startGame() {
     const cWidth = canvas.getBoundingClientRect().width;
     const cHeight = canvas.getBoundingClientRect().height;
     const ctx = canvas.getContext("2d");
+    
+    window.addEventListener("keydown", (event) => {
+        console.log(event);
+    });
 
 
     if (ctx) {
         const tileSize = Math.floor(cWidth / PLAYFIELD_WIDTH); // pixels
 
         const pf = new Playfield();
-        const t = tetrominoFactory.getRandom();
+        //const t = tetrominoFactory.getRandom();
+        const t = tetrominoFactory.getByIdx(2);
         const drawTiles = pf.overlay(t.tiles);
-        for (let i = 0; i < PLAYFIELD_HEIGHT; i++) {
-            for (let j = 0; j < PLAYFIELD_WIDTH; j++) {
+        for (let i = 0; i < pf.height; i++) {
+            for (let j = 0; j < pf.width; j++) {
                 ctx.fillStyle = CANVAS_COLORS[drawTiles.get(j, i)];
                 ctx.fillRect(j * tileSize, i * tileSize, tileSize, tileSize);
             }
