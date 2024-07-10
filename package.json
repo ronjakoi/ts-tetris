@@ -13,5 +13,6 @@
   },
   "scripts": {
     "test": "vitest"
-  }
+  },
+  "type": "module"
 }
