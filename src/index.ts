@@ -13,14 +13,13 @@ function startGame() {
         console.log(event);
     });
 
-
     if (ctx) {
         const tileSize = Math.floor(cWidth / PLAYFIELD_WIDTH); // pixels
 
         const pf = new Playfield();
         //const t = tetrominoFactory.getRandom();
         const t = tetrominoFactory.getByIdx(2);
-        const drawTiles = pf.overlay(t.tiles);
+        const drawTiles = pf.overlay(t.tiles, [2, 1]);
         for (let i = 0; i < pf.height; i++) {
             for (let j = 0; j < pf.width; j++) {
                 ctx.fillStyle = CANVAS_COLORS[drawTiles.get(j, i)];

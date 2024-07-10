@@ -13,4 +13,3 @@ export const CANVAS_COLORS: { [key in TileType]: string } = {
     [TileType.Red]: "red",
     [TileType.Magenta]: "magenta",
 };
-

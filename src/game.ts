@@ -49,7 +49,10 @@ export class Playfield {
     width: number;
 
     constructor(width?: number, height?: number) {
-        [this.width, this.height] = [height ? height : PLAYFIELD_HEIGHT, width ? width : PLAYFIELD_HEIGHT];
+        [this.width, this.height] = [
+            height ? height : PLAYFIELD_HEIGHT,
+            width ? width : PLAYFIELD_HEIGHT,
+        ];
         const mtx = Array(this.width * this.height).fill(TileType.Empty);
         this.tiles = new TileMatrix(mtx, this.width, this.height);
     }
@@ -83,9 +86,10 @@ export class Tetromino {
         this.width = mtx[0].length;
         this.height = mtx.length;
         this.tiles = new TileMatrix(
-            mtx.map(row => row.map(cell => cell ? tt.valueOf() : TileType.Empty)).flat(),
+            mtx.map((row) => row.map((cell) => (cell ? tt.valueOf() : TileType.Empty))).flat(),
             this.width,
-            this.height);
+            this.height,
+        );
         this.position = null;
         this.length = this.tiles.length;
     }
@@ -103,14 +107,15 @@ export class Tetromino {
     get = (x: number, y: number): TileType => this.tiles.get(x, y);
 }
 
-
 export const tetrominoFactory = {
     templates: [
         {
             name: "T",
             color: TileType.Magenta,
-            matrix: [[false, true, false],
-                    [true, true, true]]
+            matrix: [
+                [false, true, false],
+                [true, true, true],
+            ],
         },
         {
             name: "I",
@@ -120,46 +125,58 @@ export const tetrominoFactory = {
         {
             name: "O",
             color: TileType.Yellow,
-            matrix: [[true, true],
-                    [true, true]],
+            matrix: [
+                [true, true],
+                [true, true],
+            ],
         },
         {
             name: "J",
             color: TileType.DarkBlue,
-            matrix: [[false, true],
-                    [false, true],
-                    [true, true]]
+            matrix: [
+                [false, true],
+                [false, true],
+                [true, true],
+            ],
         },
         {
             name: "L",
             color: TileType.Orange,
-            matrix: [[true, false],
-                    [true, false],
-                    [true, true]]
+            matrix: [
+                [true, false],
+                [true, false],
+                [true, true],
+            ],
         },
         {
             name: "S",
             color: TileType.Green,
-            matrix: [[false, true, true],
-                    [true, true, false]]
+            matrix: [
+                [false, true, true],
+                [true, true, false],
+            ],
         },
         {
             name: "Z",
             color: TileType.Red,
-            matrix: [[true, true, false],
-                    [false, true, true]]
-        }
+            matrix: [
+                [true, true, false],
+                [false, true, true],
+            ],
+        },
     ],
     getRandom: function (): Tetromino {
         return this.getByIdx(Math.floor(Math.random() * this.templates.length));
     },
     getByName: function (name: string): Tetromino | undefined {
         //this.templates.forEach(x => { console.debug(`${x.name} === ${name} == ${x.name === name}\n`)});
-        const t = this.templates.find(x => { x.name === name });
-        return (t === undefined) ? undefined : new Tetromino(t.matrix, t.color);
+        const t = this.templates.find((x) => {
+            x.name === name;
+        });
+        return t === undefined ? undefined : new Tetromino(t.matrix, t.color);
     },
     getByIdx: function (idx: number): Tetromino {
         const t = this.templates[idx];
         return new Tetromino(t.matrix, t.color);
-    }
-}
+    },
+};
