@@ -1,23 +1,25 @@
-//import { PLAYFIELD_HEIGHT, PLAYFIELD_WIDTH } from "../src/constants";
+import { describe, expect, test } from 'vitest';
 import { TileMatrix, Playfield, Tetromino, tetrominoFactory } from "./game";
 
-// No idea why this doesn't work:
-// import { describe, test, expect } from "@jest/globals";
-const { describe, test, expect } = require('@jest/globals');
-
-const pf = new Playfield(5, 8);
-//const o = tetrominoFactory.get("O")!;
-const o = tetrominoFactory.getByIdx(2);
-
-describe('overlay tetromino on empty 5x8 playfield', () => {
-    test('O at origin', () => {
-        const oAtOrigin = [
-            4,4,0,0,0,0,0,0,
-            4,4,0,0,0,0,0,0,
-            0,0,0,0,0,0,0,0,
-            0,0,0,0,0,0,0,0,
-            0,0,0,0,0,0,0,0
-        ];
-        expect(pf.overlay(o).tiles).toEqual(oAtOrigin);
-    });
+test.each([
+    { pf: new Playfield(5, 8),
+    t: tetrominoFactory.getByIdx(2),
+    mtx: [
+        4,4,0,0,0,0,0,0,
+        4,4,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0
+    ]},
+    { pf: new Playfield(5, 8),
+    t: tetrominoFactory.getByIdx(0),
+    mtx: [
+        0,7,0,0,0,0,0,0,
+        7,7,7,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0
+    ]}
+])('overlay $t.name at origin', ({pf, t, mtx}) => {
+    expect(pf.overlay(t).tiles).toEqual(mtx);
 });
