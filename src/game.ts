@@ -41,6 +41,22 @@ export class TileMatrix {
         }
         return ret;
     }
+
+    deleteLines(lines: number[]): void {
+        // create new array with $lines * $width empty tiles
+        let newTiles: TileType[] = Array(lines.length * this.width).fill(TileType.Empty);
+        const lineStartIdxs = lines.map((n) => n * this.width);
+        const lastLineStart = this.tiles.length - this.width;
+        for (let i = 0; i <= lastLineStart; i += this.width) {
+            // if this is not a line to be deleted, copy it to new array
+            if (!lineStartIdxs.includes(i)) {
+                const keepLine = this.tiles.slice(i, i + this.width);
+                newTiles = newTiles.concat(keepLine);
+            }
+        }
+        this.tiles = newTiles;
+        console.log(this.tiles);
+    }
 }
 
 export class Playfield {
@@ -50,8 +66,8 @@ export class Playfield {
 
     constructor(width?: number, height?: number) {
         [this.width, this.height] = [
+            width ? width : PLAYFIELD_WIDTH,
             height ? height : PLAYFIELD_HEIGHT,
-            width ? width : PLAYFIELD_HEIGHT,
         ];
         const mtx = Array(this.width * this.height).fill(TileType.Empty);
         this.tiles = new TileMatrix(mtx, this.width, this.height);
@@ -60,17 +76,9 @@ export class Playfield {
     overlay = (other: TileMatrix | Tetromino, position?: Vec2): TileMatrix =>
         this.tiles.overlay(other, position);
 
-    deleteLines(lines: number[]): void {
-        let newTiles: TileType[] = Array();
-        for (let i = this.tiles.length - this.width; i >= 0; i -= this.width) {
-            if (!lines.includes(i * this.width)) {
-                newTiles.concat(this.tiles.tiles.slice(i, this.width + 1));
-            }
-        }
-        this.tiles.tiles = newTiles;
-    }
-
     get = (x: number, y: number): TileType => this.tiles.get(x, y);
+
+    deleteLines = (lines: number[]): void => this.tiles.deleteLines(lines);
 }
 
 export class Tetromino {
@@ -169,7 +177,6 @@ export const tetrominoFactory = {
         return this.getByIdx(Math.floor(Math.random() * this.templates.length));
     },
     getByName: function (name: string): Tetromino | undefined {
-        //this.templates.forEach(x => { console.debug(`${x.name} === ${name} == ${x.name === name}\n`)});
         const t = this.templates.find((x) => {
             x.name === name;
         });
