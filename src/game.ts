@@ -54,7 +54,8 @@ export class Playfield {
         this.tiles = new TileMatrix(mtx, this.width, this.height);
     }
 
-    overlay = (other: TileMatrix | Tetromino, position?: Vec2): TileMatrix => this.tiles.overlay(other);
+    overlay = (other: TileMatrix | Tetromino, position?: Vec2): TileMatrix =>
+        this.tiles.overlay(other, position);
 
     deleteLines(lines: number[]): void {
         let newTiles: TileType[] = Array();
