@@ -103,4 +103,23 @@ describe("gameplay events", () => {
             ]
         );
     });
+    test("find full rows", () => {
+        const mtx = new TileMatrix(
+            // prettier-ignore
+            [
+                0,0,0,0,0,
+                0,0,0,0,0,
+                0,0,3,0,1,
+                2,2,2,0,4,
+                2,2,2,0,1,
+                2,2,2,4,4,
+                2,2,2,1,1,
+                2,2,2,1,1,
+            ],
+            5,
+            8,
+        );
+        const fullRows = mtx.getFullRows();
+        expect(fullRows).toEqual([5,6,7]);
+    });
 });

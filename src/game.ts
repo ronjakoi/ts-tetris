@@ -4,6 +4,9 @@ import {
     CANVAS_COLORS,
     FRAMES_PER_SECOND,
     STARTING_GRAVITY,
+    SOFTDROP_GRAVITY,
+    SOFTDROP_RESET_MS,
+    LOCK_DELAY,
 } from "./constants.js";
 import {
     TileType,
@@ -78,12 +81,12 @@ export class TileMatrix {
     }
 
     getFullRows(): number[] {
-        const rows = [...Array(this.height).keys()];
-        return rows.filter((row) => {
-            this.tiles.slice(row * this.width, row * (this.width + 1)).every((col) => {
-                col != TileType.Empty;
-            });
-        });
+        const rows: number[] = [...Array(this.height).keys()];
+        return rows.filter((row) =>
+            this.tiles
+                .slice(row * this.width, row * this.width + this.width)
+                .every((col) => col != TileType.Empty),
+        );
     }
 }
 
@@ -242,8 +245,8 @@ export const tetrominoFactory: {
 
 export class Game {
     pf: Playfield;
-    currentPiece: Tetromino | null;
-    nextPiece: Tetromino | null;
+    currentPiece: Tetromino | undefined;
+    nextPiece: Tetromino | undefined;
     state: GameState;
     score: number;
     fieldCtx: CanvasRenderingContext2D;
@@ -254,6 +257,7 @@ export class Game {
     tileSize: number;
     softDrop: boolean;
     frameDelay: number;
+    lockTimeout: NodeJS.Timeout | undefined;
 
     constructor(args: {
         fieldCanvas: HTMLCanvasElement;
@@ -263,8 +267,8 @@ export class Game {
     }) {
         this.pf = new Playfield(args.width, args.height);
         this.state = GameState.Menu;
-        this.currentPiece = null;
-        this.nextPiece = null;
+        this.currentPiece = undefined;
+        this.nextPiece = undefined;
         this.score = 0;
         this.gravity = STARTING_GRAVITY;
 
@@ -300,7 +304,7 @@ export class Game {
     lockPiece(): void {
         if (this.currentPiece) {
             this.pf.tiles = this.pf.overlay(this.currentPiece);
-            this.currentPiece = null;
+            this.currentPiece = undefined;
         }
     }
 
@@ -308,15 +312,17 @@ export class Game {
         // 1. no piece right now: false
         if (!this.currentPiece || !this.currentPiece.position) return false;
         // 2. piece is bumping against an edge: true
-        switch(direction) {
+        switch (direction) {
             case TetrominoMove.Down:
-                if (this.currentPiece.position[1] === this.pf.height - this.currentPiece.height) return true;
+                if (this.currentPiece.position[1] === this.pf.height - this.currentPiece.height)
+                    return true;
                 break;
             case TetrominoMove.Left:
                 if (this.currentPiece.position[0] === 0) return true;
                 break;
             case TetrominoMove.Right:
-                if (this.currentPiece.position[0] === this.pf.width - this.currentPiece.width) return true;
+                if (this.currentPiece.position[0] === this.pf.width - this.currentPiece.width)
+                    return true;
                 break;
         }
         // 3a. temporarily move piece in $direction
@@ -340,7 +346,7 @@ export class Game {
         this.lockPiece();
     }
 
-    handleKeyEvent(event: KeyboardEvent): void {
+    handleKeyDown(event: KeyboardEvent): void {
         switch (event.code) {
             case "ArrowLeft":
             case "ArrowRight":
@@ -350,9 +356,6 @@ export class Game {
                 if (this.gravity < 1) {
                     this.softDrop = true;
                 }
-                setTimeout(() => {
-                    this.softDrop = false;
-                }, 500);
                 break;
             case "Space":
                 this.hardDrop();
@@ -378,6 +381,14 @@ export class Game {
         }
     }
 
+    handleKeyUp(event: KeyboardEvent): void {
+        switch (event.code) {
+            case "ArrowDown":
+                this.softDrop = false;
+                break;
+        }
+    }
+
     move(d: TetrominoMove): void {
         if (!this.currentPiece || !this.currentPiece.position) return;
         const tmp = this.currentPiece.position;
@@ -388,7 +399,7 @@ export class Game {
                 }
                 break;
             case TetrominoMove.Right:
-                if (this.currentPiece.position[0] < this.pf.width - 1) {
+                if (this.currentPiece.position[0] < this.pf.width - this.currentPiece.width) {
                     this.currentPiece.position[0]++;
                 }
                 break;
@@ -405,7 +416,6 @@ export class Game {
     }
 
     drawGame(): void {
-        this.blankCanvas();
         const drawTiles = this.currentPiece ? this.pf.overlay(this.currentPiece) : this.pf.tiles;
         for (let i = 0; i < this.pf.height; i++) {
             for (let j = 0; j < this.pf.width; j++) {
@@ -427,7 +437,7 @@ export class Game {
         this.fieldCtx.textAlign = "center";
         const x = this.fieldPixels[0] / 2;
         const y = this.fieldPixels[1] * 0.33;
-        this.fieldCtx.fillText("Press Enter to start", x, y)
+        this.fieldCtx.fillText("Press Enter to start", x, y);
     }
 
     blankCanvas(): void {
@@ -453,8 +463,26 @@ export class Game {
                             0,
                         ];
                     }
-                    //this.currentPiece.position[1] += this.gravity;
-                    if (this.isPieceLanded()) this.lockPiece();
+
+                    if (this.isPieceLanded()) {
+                        if (!this.lockTimeout) {
+                            this.lockTimeout = setTimeout(() => {
+                                this.lockPiece();
+                                this.lockTimeout = undefined;
+                            }, LOCK_DELAY);
+                        }
+                    } else {
+                        if (this.softDrop) {
+                            this.currentPiece.position[1] += SOFTDROP_GRAVITY;
+                        } else {
+                            this.currentPiece.position[1] += this.gravity;
+                        }
+                        // prevent overshooting the bottom
+                        this.currentPiece.position[1] = Math.min(
+                            this.currentPiece.position[1],
+                            this.pf.height - this.currentPiece.height,
+                        );
+                    }
                     this.pf.clearRows(this.pf.getFullRows());
                     this.drawGame();
                     break;
