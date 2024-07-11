@@ -1,4 +1,4 @@
-export enum TileType {
+export enum Tile {
     Empty = 0x00,
     LightBlue = 0x01,
     DarkBlue = 0x02,
@@ -11,16 +11,16 @@ export enum TileType {
 
 export type Vec2 = [number, number];
 
-export enum TetrominoMove {
+export enum Move {
     Left,
     Right,
     Down
 }
 
 export const KEYCODE_TO_MOVE = {
-    'ArrowLeft': TetrominoMove.Left,
-    'ArrowRight': TetrominoMove.Right,
-    'ArrowDown': TetrominoMove.Down,
+    'ArrowLeft': Move.Left,
+    'ArrowRight': Move.Right,
+    'ArrowDown': Move.Down,
 };
 
 export enum TetrominoOrientation {

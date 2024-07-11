@@ -6,24 +6,24 @@ import {
     STARTING_GRAVITY,
     SOFTDROP_GRAVITY,
     SOFTDROP_RESET_MS,
-    LOCK_DELAY,
+    LOCK_DELAY_MS,
 } from "./constants.js";
 import {
-    TileType,
+    Tile,
     Vec2,
-    TetrominoMove,
+    Move,
     GameState,
     KEYCODE_TO_MOVE,
     TetrominoOrientation,
 } from "./types.js";
 
 export class TileMatrix {
-    tiles: TileType[];
+    tiles: Tile[];
     height: number;
     width: number;
     readonly length: number;
 
-    constructor(t: TileType[], w: number, h: number) {
+    constructor(t: Tile[], w: number, h: number) {
         this.tiles = Array.from(t);
         this.height = h;
         this.width = w;
@@ -31,11 +31,11 @@ export class TileMatrix {
     }
 
     static newEmpty(width: number, height: number) {
-        const t = Array(width * height).fill(TileType.Empty);
+        const t = Array(width * height).fill(Tile.Empty);
         return new TileMatrix(t, width, height);
     }
 
-    get = (x: number, y: number): TileType => this.tiles[y * this.width + x];
+    get = (x: number, y: number): Tile => this.tiles[y * this.width + x];
 
     rotate(deg: number): void {
         // TODO
@@ -57,7 +57,7 @@ export class TileMatrix {
         for (let i = pos[1], y = 0; i < this.height && y < other.height; i++, y++) {
             for (let j = pos[0], x = 0; j < this.width && x < other.width; j++, x++) {
                 const t = other.get(x, y);
-                if (t != TileType.Empty) {
+                if (t != Tile.Empty) {
                     ret.tiles[i * this.width + j] = t.valueOf();
                 }
             }
@@ -67,7 +67,7 @@ export class TileMatrix {
 
     clearRows(rows: number[]): void {
         // create new array with $lines * $width empty tiles
-        let newTiles: TileType[] = Array(rows.length * this.width).fill(TileType.Empty);
+        let newTiles: Tile[] = Array(rows.length * this.width).fill(Tile.Empty);
         const lineStartIdxs = rows.map((n) => n * this.width);
         const lastLineStart = this.tiles.length - this.width;
         for (let i = 0; i <= lastLineStart; i += this.width) {
@@ -85,7 +85,7 @@ export class TileMatrix {
         return rows.filter((row) =>
             this.tiles
                 .slice(row * this.width, row * this.width + this.width)
-                .every((col) => col != TileType.Empty),
+                .every((col) => col != Tile.Empty),
         );
     }
 }
@@ -100,14 +100,14 @@ export class Playfield {
             width ? width : PLAYFIELD_WIDTH,
             height ? height : PLAYFIELD_HEIGHT,
         ];
-        const mtx = Array(this.width * this.height).fill(TileType.Empty);
+        const mtx = Array(this.width * this.height).fill(Tile.Empty);
         this.tiles = new TileMatrix(mtx, this.width, this.height);
     }
 
     overlay = (other: TileMatrix | Tetromino, position?: Vec2): TileMatrix =>
         this.tiles.overlay(other, position);
 
-    get = (x: number, y: number): TileType => this.tiles.get(x, y);
+    get = (x: number, y: number): Tile => this.tiles.get(x, y);
 
     clearRows = (lines: number[]): void => this.tiles.clearRows(lines);
 
@@ -119,19 +119,19 @@ export class Tetromino {
     tiles: TileMatrix;
     public width: number;
     public height: number;
-    position: Vec2 | null;
+    position: Vec2 | undefined;
     readonly length: number;
 
-    constructor(mtx: boolean[][], tt: TileType) {
+    constructor(mtx: boolean[][], tt: Tile) {
         this.orientation = TetrominoOrientation.North;
         this.width = mtx[0].length;
         this.height = mtx.length;
         this.tiles = new TileMatrix(
-            mtx.map((row) => row.map((cell) => (cell ? tt.valueOf() : TileType.Empty))).flat(),
+            mtx.map((row) => row.map((cell) => (cell ? tt.valueOf() : Tile.Empty))).flat(),
             this.width,
             this.height,
         );
-        this.position = null;
+        this.position = undefined;
         this.length = this.tiles.length;
     }
 
@@ -141,10 +141,19 @@ export class Tetromino {
         //this.tiles.rotate(deg);
     }
 
-    get = (x: number, y: number): TileType => this.tiles.get(x, y);
+    get = (x: number, y: number): Tile => this.tiles.get(x, y);
 
-    intersects(pf: Playfield): boolean {
-        // TODO
+    intersects(other: Playfield | TileMatrix): boolean {
+        if (this.position === undefined) return false;
+        const y0 = Math.floor(this.position[1]);
+        const x0 = this.position[0];
+        for (let i = 0; i < this.height; i++) {
+            for (let j = 0; j < this.width; j++) {
+                if (this.get(j, i) != Tile.Empty && other.get(x0 + j, y0 + i) != Tile.Empty) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 }
@@ -161,7 +170,7 @@ export const tetrominoFactory: {
     templates: [
         {
             name: "T",
-            color: TileType.Magenta,
+            color: Tile.Magenta,
             matrix: [
                 [false, true, false],
                 [true, true, true],
@@ -169,12 +178,12 @@ export const tetrominoFactory: {
         },
         {
             name: "I",
-            color: TileType.LightBlue,
+            color: Tile.LightBlue,
             matrix: [[true, true, true, true]],
         },
         {
             name: "O",
-            color: TileType.Yellow,
+            color: Tile.Yellow,
             matrix: [
                 [true, true],
                 [true, true],
@@ -182,7 +191,7 @@ export const tetrominoFactory: {
         },
         {
             name: "J",
-            color: TileType.DarkBlue,
+            color: Tile.DarkBlue,
             matrix: [
                 [false, true],
                 [false, true],
@@ -191,7 +200,7 @@ export const tetrominoFactory: {
         },
         {
             name: "L",
-            color: TileType.Orange,
+            color: Tile.Orange,
             matrix: [
                 [true, false],
                 [true, false],
@@ -200,7 +209,7 @@ export const tetrominoFactory: {
         },
         {
             name: "S",
-            color: TileType.Green,
+            color: Tile.Green,
             matrix: [
                 [false, true, true],
                 [true, true, false],
@@ -208,7 +217,7 @@ export const tetrominoFactory: {
         },
         {
             name: "Z",
-            color: TileType.Red,
+            color: Tile.Red,
             matrix: [
                 [true, true, false],
                 [false, true, true],
@@ -302,25 +311,29 @@ export class Game {
     }
 
     lockPiece(): void {
-        if (this.currentPiece) {
+        if (this.currentPiece !== undefined && this.currentPiece.position !== undefined) {
+            if (this.currentPiece.position[1] < 1.0) {
+                this.state = GameState.GameOver;
+                return;
+            }
             this.pf.tiles = this.pf.overlay(this.currentPiece);
             this.currentPiece = undefined;
         }
     }
 
-    isPieceObstructed(direction: TetrominoMove): boolean {
+    isPieceObstructed(direction: Move): boolean {
         // 1. no piece right now: false
         if (!this.currentPiece || !this.currentPiece.position) return false;
-        // 2. piece is bumping against an edge: true
+        // 2. piece is bumping against a playfield edge: true
         switch (direction) {
-            case TetrominoMove.Down:
+            case Move.Down:
                 if (this.currentPiece.position[1] === this.pf.height - this.currentPiece.height)
                     return true;
                 break;
-            case TetrominoMove.Left:
+            case Move.Left:
                 if (this.currentPiece.position[0] === 0) return true;
                 break;
-            case TetrominoMove.Right:
+            case Move.Right:
                 if (this.currentPiece.position[0] === this.pf.width - this.currentPiece.width)
                     return true;
                 break;
@@ -328,6 +341,7 @@ export class Game {
         // 3a. temporarily move piece in $direction
         // 3b. check if new position intersects with existing non-empty tiles
         // 3c. restore saved position
+        // 3d. return value from 3b.
         const tmp: Vec2 = [...this.currentPiece.position];
         this.move(direction);
         const ret = this.currentPiece.intersects(this.pf);
@@ -336,12 +350,12 @@ export class Game {
     }
 
     isPieceLanded(): boolean {
-        return this.isPieceObstructed(TetrominoMove.Down);
+        return this.isPieceObstructed(Move.Down);
     }
 
     hardDrop(): void {
         while (!this.isPieceLanded()) {
-            this.move(TetrominoMove.Down);
+            this.move(Move.Down);
         }
         this.lockPiece();
     }
@@ -389,21 +403,23 @@ export class Game {
         }
     }
 
-    move(d: TetrominoMove): void {
+    move(d: Move): void {
         if (!this.currentPiece || !this.currentPiece.position) return;
-        const tmp = this.currentPiece.position;
+        //const tmp = this.currentPiece.position;
+        // const tmp: Vec2 = [...this.currentPiece.position];
+        const tmpX = this.currentPiece.position[0].valueOf();
         switch (d) {
-            case TetrominoMove.Left:
+            case Move.Left:
                 if (this.currentPiece.position[0] > 0) {
                     this.currentPiece.position[0]--;
                 }
                 break;
-            case TetrominoMove.Right:
+            case Move.Right:
                 if (this.currentPiece.position[0] < this.pf.width - this.currentPiece.width) {
                     this.currentPiece.position[0]++;
                 }
                 break;
-            case TetrominoMove.Down:
+            case Move.Down:
                 if (this.currentPiece.position[1] < this.pf.height - 1) {
                     this.currentPiece.position[1]++;
                 }
@@ -411,7 +427,7 @@ export class Game {
         }
         // revert if piece intersects blocks on the field
         if (this.currentPiece.intersects(this.pf)) {
-            this.currentPiece.position = tmp;
+            this.currentPiece.position[0] = tmpX;
         }
     }
 
@@ -428,6 +444,20 @@ export class Game {
                 );
             }
         }
+    }
+
+    drawGameOver(): void {
+        this.drawGame();
+        this.fieldCtx.save();
+        this.fieldCtx.fillStyle = "rgba(0, 0, 0, .65)";
+        this.fieldCtx.fillRect(0, 0, this.fieldPixels[0], this.fieldPixels[1]);
+        this.fieldCtx.fillStyle = "white";
+        this.fieldCtx.font = "bold 16pt sans-serif";
+        this.fieldCtx.textAlign = "center";
+        const x = this.fieldPixels[0] / 2;
+        const y = this.fieldPixels[1] * 0.33;
+        this.fieldCtx.fillText("Game Over", x, y);
+        this.fieldCtx.restore();
     }
 
     drawMenu(): void {
@@ -465,18 +495,14 @@ export class Game {
                     }
 
                     if (this.isPieceLanded()) {
-                        if (!this.lockTimeout) {
+                        if (this.lockTimeout === undefined) {
                             this.lockTimeout = setTimeout(() => {
                                 this.lockPiece();
                                 this.lockTimeout = undefined;
-                            }, LOCK_DELAY);
+                            }, LOCK_DELAY_MS);
                         }
-                    } else {
-                        if (this.softDrop) {
-                            this.currentPiece.position[1] += SOFTDROP_GRAVITY;
-                        } else {
-                            this.currentPiece.position[1] += this.gravity;
-                        }
+                    } else { // falling
+                        this.currentPiece.position[1] += this.softDrop ? SOFTDROP_GRAVITY : this.gravity;
                         // prevent overshooting the bottom
                         this.currentPiece.position[1] = Math.min(
                             this.currentPiece.position[1],
@@ -488,7 +514,7 @@ export class Game {
                     break;
                 case GameState.GameOver:
                     // TODO:
-                    // this.drawGameOver();
+                    this.drawGameOver();
                     break;
             }
         }, this.frameDelay);

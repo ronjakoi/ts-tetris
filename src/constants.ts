@@ -1,20 +1,20 @@
-import { TileType } from "./types.js";
+import { Tile } from "./types.js";
 
 export const PLAYFIELD_HEIGHT = 20;
 export const PLAYFIELD_WIDTH = 10;
 
-export const CANVAS_COLORS: { [key in TileType]: string } = {
-    [TileType.Empty]: "black",
-    [TileType.LightBlue]: "cyan",
-    [TileType.DarkBlue]: "#1E90FF",
-    [TileType.Orange]: "orange",
-    [TileType.Yellow]: "yellow",
-    [TileType.Green]: "green",
-    [TileType.Red]: "red",
-    [TileType.Magenta]: "magenta",
+export const CANVAS_COLORS: { [key in Tile]: string } = {
+    [Tile.Empty]: "black",
+    [Tile.LightBlue]: "cyan",
+    [Tile.DarkBlue]: "#1E90FF",
+    [Tile.Orange]: "orange",
+    [Tile.Yellow]: "yellow",
+    [Tile.Green]: "green",
+    [Tile.Red]: "red",
+    [Tile.Magenta]: "magenta",
 };
 
-export const LOCK_DELAY = 500;
+export const LOCK_DELAY_MS = 500;
 
 export const FRAMES_PER_SECOND = 60;
 
