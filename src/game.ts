@@ -497,7 +497,10 @@ export class Game {
                     if (this.isPieceLanded()) {
                         if (this.lockTimeout === undefined) {
                             this.lockTimeout = setTimeout(() => {
-                                this.lockPiece();
+                                // the player can still move the piece to a non-landed
+                                // position during the lock delay, so check again
+                                if (this.isPieceLanded()) this.lockPiece();
+                                // release timeout
                                 this.lockTimeout = undefined;
                             }, LOCK_DELAY_MS);
                         }
