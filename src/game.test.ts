@@ -72,7 +72,7 @@ test.each([
 });
 
 describe("gameplay events", () => {
-    test("delete lines", () => {
+    test("clear rows", () => {
         const mtx = new TileMatrix(
             // prettier-ignore
             [
@@ -88,7 +88,7 @@ describe("gameplay events", () => {
             5,
             8,
         );
-        mtx.deleteLines([5,6,7]);
+        mtx.clearRows([5,6,7]);
         expect(mtx.tiles).toEqual(
             // prettier-ignore
             [

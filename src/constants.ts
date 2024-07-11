@@ -13,3 +13,9 @@ export const CANVAS_COLORS: { [key in TileType]: string } = {
     [TileType.Red]: "red",
     [TileType.Magenta]: "magenta",
 };
+
+export const LOCK_DELAY = 500;
+
+export const FRAMES_PER_SECOND = 60;
+// 1 tile / n frames
+export const STARTING_GRAVITY = 1 / 64;

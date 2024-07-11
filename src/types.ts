@@ -16,3 +16,24 @@ export enum TetrominoMove {
     Right,
     Down
 }
+
+export const KEYCODE_TO_MOVE = {
+    'ArrowLeft': TetrominoMove.Left,
+    'ArrowRight': TetrominoMove.Right,
+    'ArrowDown': TetrominoMove.Down,
+};
+
+export enum TetrominoOrientation {
+    North = 0,
+    West = 90,
+    South = 180,
+    East = 270,
+}
+
+export enum GameState {
+    Menu,
+    Running,
+    Paused,
+    GameOver,
+    //HighScore,
+}

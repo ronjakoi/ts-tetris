@@ -1,30 +1,17 @@
 import { PLAYFIELD_WIDTH, CANVAS_COLORS } from "./constants.js";
-import { Playfield, tetrominoFactory } from "./game.js";
+import { Playfield, tetrominoFactory, Game } from "./game.js";
 
 window.addEventListener("load", startGame);
 
 function startGame() {
-    const canvas = <HTMLCanvasElement>document.getElementById("game");
-    const cWidth = canvas.getBoundingClientRect().width;
-    const cHeight = canvas.getBoundingClientRect().height;
-    const ctx = canvas.getContext("2d");
+    const fieldCanvas = <HTMLCanvasElement>document.getElementById("game");
+    const nextCanvas = <HTMLCanvasElement>document.getElementById("next");
 
+    tetrominoFactory.shuffle();
+
+    const game = new Game({ fieldCanvas: fieldCanvas, nextCanvas: nextCanvas });
     window.addEventListener("keydown", (event) => {
-        console.log(event);
+        game.handleKeyEvent(event);
     });
-
-    if (ctx) {
-        const tileSize = Math.floor(cWidth / PLAYFIELD_WIDTH); // pixels
-
-        const pf = new Playfield();
-        //const t = tetrominoFactory.getRandom();
-        const t = tetrominoFactory.getByIdx(2);
-        const drawTiles = pf.overlay(t.tiles, [2, 1]);
-        for (let i = 0; i < pf.height; i++) {
-            for (let j = 0; j < pf.width; j++) {
-                ctx.fillStyle = CANVAS_COLORS[drawTiles.get(j, i)];
-                ctx.fillRect(j * tileSize, i * tileSize, tileSize, tileSize);
-            }
-        }
-    }
+    game.play();
 }
