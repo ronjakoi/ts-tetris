@@ -122,4 +122,14 @@ describe("gameplay events", () => {
         const fullRows = mtx.getFullRows();
         expect(fullRows).toEqual([5,6,7]);
     });
+    test("shuffle random bag", () => {
+        const bagBefore = [...tetrominoFactory.randomBag];
+        expect(bagBefore.length).toBeGreaterThan(0);
+        tetrominoFactory.shuffle();
+        expect(tetrominoFactory.randomBag.length).toBeGreaterThan(0);
+        expect(tetrominoFactory.randomBag).not.toEqual(bagBefore);
+        const bagBeforeSorted = [...bagBefore].sort();
+        const randomBagSorted = [...tetrominoFactory.randomBag].sort();
+        expect(bagBeforeSorted).toEqual(randomBagSorted);
+    })
 });

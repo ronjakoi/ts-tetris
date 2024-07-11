@@ -230,7 +230,7 @@ export const tetrominoFactory: {
         // Durstenfeld shuffle
         for (let i = this.randomBag.length - 1; i--; i > 0) {
             const j = Math.floor(Math.random() * (i + 1));
-            [this.randomBag[i], this.randomBag[i]] = [this.randomBag[j], this.randomBag[i]];
+            [this.randomBag[i], this.randomBag[j]] = [this.randomBag[j], this.randomBag[i]];
         }
         this.currentIndex = 0;
     },
