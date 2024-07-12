@@ -8,14 +8,7 @@ import {
     SOFTDROP_RESET_MS,
     LOCK_DELAY_MS,
 } from "./constants.js";
-import {
-    Tile,
-    Vec2,
-    Move,
-    GameState,
-    KEYCODE_TO_MOVE,
-    TetrominoOrientation,
-} from "./types.js";
+import { Tile, Vec2, Move, GameState, KEYCODE_TO_MOVE, TetrominoOrientation } from "./types.js";
 
 export class TileMatrix {
     tiles: Tile[];
@@ -317,7 +310,8 @@ export class Game {
                 return;
             }
             this.pf.tiles = this.pf.overlay(this.currentPiece);
-            this.currentPiece = undefined;
+            this.currentPiece = this.nextPiece;
+            this.nextPiece = tetrominoFactory.getNext();
         }
     }
 
@@ -477,6 +471,21 @@ export class Game {
         this.fieldCtx.restore();
     }
 
+    doFall(): void {
+        if(this.currentPiece === undefined || this.currentPiece.position === undefined) return;
+        if(this.gravity < 1.0) {
+            this.currentPiece.position[1] += this.softDrop && this.gravity < SOFTDROP_GRAVITY
+                ? SOFTDROP_GRAVITY
+                : this.gravity;
+        } else {
+            const maxRows = Math.floor(this.gravity);
+            let counter;
+            for(counter = 0; counter < maxRows && !this.isPieceLanded(); counter++) this.move(Move.Down);
+            const remainderG = this.gravity - counter;
+            if(!this.isPieceLanded()) this.currentPiece.position[1] += remainderG;
+        }
+    }
+
     play(): void {
         // probably only want to run this tight loop in GameState.Running
         let prevState: null | GameState = null;
@@ -486,10 +495,9 @@ export class Game {
                     this.drawMenu();
                     break;
                 case GameState.Running:
-                    if (!this.currentPiece) this.currentPiece = tetrominoFactory.getNext();
-                    if (!this.currentPiece.position) {
-                        this.currentPiece.position = [
-                            Math.floor(this.pf.width / 2) - Math.floor(this.currentPiece.width / 2),
+                    if (this.currentPiece!.position === undefined) {
+                        this.currentPiece!.position = [
+                            Math.floor((this.pf.width / 2) - (this.currentPiece!.width / 2)),
                             0,
                         ];
                     }
@@ -504,13 +512,8 @@ export class Game {
                                 this.lockTimeout = undefined;
                             }, LOCK_DELAY_MS);
                         }
-                    } else { // falling
-                        this.currentPiece.position[1] += this.softDrop ? SOFTDROP_GRAVITY : this.gravity;
-                        // prevent overshooting the bottom
-                        this.currentPiece.position[1] = Math.min(
-                            this.currentPiece.position[1],
-                            this.pf.height - this.currentPiece.height,
-                        );
+                    } else {
+                        this.doFall();
                     }
                     this.pf.clearRows(this.pf.getFullRows());
                     this.drawGame();
