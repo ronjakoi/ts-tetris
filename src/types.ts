@@ -23,11 +23,11 @@ export const KEYCODE_TO_MOVE = {
     'ArrowDown': Move.Down,
 };
 
-export enum TetrominoOrientation {
+export enum Orientation {
     North = 0,
-    West = 90,
+    East = 90,
     South = 180,
-    East = 270,
+    West = 270,
 }
 
 export enum GameState {

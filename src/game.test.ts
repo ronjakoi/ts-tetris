@@ -1,74 +1,113 @@
 import { describe, expect, test } from "vitest";
-import { TileMatrix, Playfield, Tetromino, tetrominoFactory } from "./game";
+import { TileMatrix, Playfield, Tetromino, tetrominoFactory, transpose, rotate90CW } from "./game";
+import { Orientation, Tile } from "./types";
 
-test.each([
-    {
-        pf: new Playfield(5, 8),
-        t: tetrominoFactory.getByIdx(2),
-        // prettier-ignore
-        mtx: [
-        4,4,0,0,0,
-        4,4,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-    ],
-    },
-    {
-        pf: new Playfield(5, 8),
-        t: tetrominoFactory.getByIdx(0),
-        // prettier-ignore
-        mtx: [
-        0,7,0,0,0,
-        7,7,7,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-    ],
-    },
-])("overlay $t.name at origin", ({ pf, t, mtx }) => {
-    expect(pf.overlay(t).tiles).toEqual(mtx);
+describe("utility", () => {
+    test("transpose 2d array", () => {
+        const arr = [
+            [1,0,2],
+            [0,3,0],
+            [4,0,5],
+            ];
+        expect(transpose(arr)).toEqual([
+            [1,0,4],
+            [0,3,0],
+            [2,0,5],
+        ])
+    });
+    test("rotate 2d array 90° clockwise", () => {
+        const arr = [
+            [1,0,2],
+            [0,3,0],
+            [4,0,5],
+            ];
+        expect(rotate90CW(arr)).toEqual([
+            [4,0,1],
+            [0,3,0],
+            [5,0,2]
+        ]);
+    })
 });
 
-test.each([
-    {
-        pf: new Playfield(5, 8),
-        t: tetrominoFactory.getByIdx(2),
-        // prettier-ignore
-        mtx: [
-        0,0,0,0,0,
-        0,0,4,4,0,
-        0,0,4,4,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-    ],
-    },
-    {
-        pf: new Playfield(5, 8),
-        t: tetrominoFactory.getByIdx(0),
-        // prettier-ignore
-        mtx: [
-        0,0,0,0,0,
-        0,0,0,7,0,
-        0,0,7,7,7,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-    ],
-    },
-])("overlay $t.name at (2,1)", ({ pf, t, mtx }) => {
-    expect(pf.overlay(t, [2, 1]).tiles).toEqual(mtx);
+describe("tetromino behavior", () => {
+    test.each([
+        {
+            pf: new Playfield(5, 8),
+            t: tetrominoFactory.getByIdx(2),
+            // prettier-ignore
+            mtx: [
+            4,4,0,0,0,
+            4,4,0,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+        ],
+        },
+        {
+            pf: new Playfield(5, 8),
+            t: tetrominoFactory.getByIdx(0),
+            // prettier-ignore
+            mtx: [
+            0,7,0,0,0,
+            7,7,7,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+        ],
+        },
+    ])("overlay tetromino at origin", ({ pf, t, mtx }) => {
+        expect(pf.overlay(t).tiles).toEqual(mtx);
+    });
+
+    test.each([
+        {
+            pf: new Playfield(5, 8),
+            t: tetrominoFactory.getByIdx(2),
+            // prettier-ignore
+            mtx: [
+            0,0,0,0,0,
+            0,0,4,4,0,
+            0,0,4,4,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+        ],
+        },
+        {
+            pf: new Playfield(5, 8),
+            t: tetrominoFactory.getByIdx(0),
+            // prettier-ignore
+            mtx: [
+            0,0,0,0,0,
+            0,0,0,7,0,
+            0,0,7,7,7,
+            0,0,0,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+        ],
+        },
+    ])("overlay tetromino at (2,1)", ({ pf, t, mtx }) => {
+        expect(pf.overlay(t, [2, 1]).tiles).toEqual(mtx);
+    });
+
+    test("rotate J tetromino 90°", () => {
+        const t = tetrominoFactory.getByIdx(3);
+        const correctArr = [Tile.DarkBlue, Tile.DarkBlue, Tile.DarkBlue,
+                            Tile.Empty, Tile.DarkBlue, Tile.Empty];
+        t.rotate(90);
+        expect(t.orientation).toEqual(Orientation.East);
+        expect(t.tiles[t.orientation].tiles).toEqual(correctArr);
+    })
 });
 
 describe("gameplay events", () => {
