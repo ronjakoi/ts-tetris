@@ -7,7 +7,7 @@ import {
     SOFTDROP_GRAVITY,
     LOCK_DELAY_MS,
 } from "./constants.js";
-import { Tile, Vec2, Move, GameState, KEYCODE_TO_MOVE, Orientation } from "./types.js";
+import { Tile, Vec2, Move, GameState, KEYCODE_TO_MOVE, Orientation, Maybe } from "./types.js";
 
 export class TileMatrix {
     tiles: Tile[];
@@ -123,16 +123,14 @@ const makeReversed = <T = any>(arr: T[]): T[] => {
 };
 
 export class Tetromino {
-    orientation: Orientation;
-    //tiles: Map<Orientation, TileMatrix>;
+    orientation: Orientation = Orientation.North;
     tiles: { [key in Orientation]: TileMatrix };
-    public width: number;
-    public height: number;
-    position: Vec2 | undefined;
+    width: number;
+    height: number;
+    position: Vec2 | undefined = undefined;
     readonly length: number;
 
     constructor(mtxNorth: boolean[][], tt: Tile) {
-        this.orientation = Orientation.North;
         this.width = mtxNorth[0].length;
         this.height = mtxNorth.length;
 
@@ -149,7 +147,6 @@ export class Tetromino {
             [Orientation.South]: new TileMatrix(S, this.width, this.height),
             [Orientation.West]: new TileMatrix(W, this.height, this.width),
         };
-        this.position = undefined;
         this.length = N.length;
     }
 
@@ -268,21 +265,65 @@ export const tetrominoFactory: {
     },
 };
 
+export const intersects = (a: TileMatrix, b: TileMatrix, pos: Vec2): boolean => {
+    if (pos === undefined) return false;
+    const y0 = Math.floor(pos[1]);
+    const x0 = pos[0];
+    for (let i = 0; i < a.height; i++) {
+        for (let j = 0; j < a.width; j++) {
+            if (a.get(j, i) != Tile.Empty && b.get(x0 + j, y0 + i) != Tile.Empty) {
+                return true;
+            }
+        }
+    }
+    return false;
+};
+
+export const maybeMove = (piece: Tetromino, pf: Playfield, move: Move): Maybe<Vec2> => {
+    if (!piece || !piece.position) return undefined;
+    const ret: Vec2 = [...piece.position];
+    switch (move) {
+        case Move.Left:
+            ret[0]--;
+            break;
+        case Move.Right:
+            ret[0]++;
+            break;
+        case Move.Down:
+            ret[1]++;
+            break;
+    }
+    if (
+        ret[0] < 0 ||
+        ret[0] > pf.width - piece.width ||
+        Math.floor(ret[1]) > pf.height - piece.height ||
+        intersects(piece.tiles[piece.orientation], pf.tiles, ret)
+    ) {
+        return undefined;
+    } else {
+        return ret;
+    }
+};
+
+export const isPieceObstructed = (piece: Tetromino, pf: Playfield, direction: Move): boolean => {
+    return maybeMove(piece, pf, direction) === undefined ? true : false;
+};
+
 export class Game {
     pf: Playfield;
-    currentPiece: Tetromino | undefined;
-    nextPiece: Tetromino | undefined;
-    state: GameState;
-    score: number;
+    currentPiece: Tetromino | undefined = undefined;
+    nextPiece: Tetromino | undefined = undefined;
+    state: GameState = GameState.Menu;
+    score: number = 0;
     fieldCtx: CanvasRenderingContext2D;
     fieldPixels: Vec2;
     nextCtx: CanvasRenderingContext2D;
     nextPixels: Vec2;
-    gravity: number;
+    gravity: number = STARTING_GRAVITY;
     tileSize: number;
-    softDrop: boolean;
-    frameDelay: number;
-    lockTimeout: NodeJS.Timeout | undefined;
+    softDrop: boolean = false;
+    frameDelay: number = (1 / FRAMES_PER_SECOND) * 0.8;
+    lockTimeout: NodeJS.Timeout | undefined = undefined;
 
     constructor(args: {
         fieldCanvas: HTMLCanvasElement;
@@ -291,11 +332,6 @@ export class Game {
         height?: number;
     }) {
         this.pf = new Playfield(args.width, args.height);
-        this.state = GameState.Menu;
-        this.currentPiece = undefined;
-        this.nextPiece = undefined;
-        this.score = 0;
-        this.gravity = STARTING_GRAVITY;
 
         const fCtx = args.fieldCanvas.getContext("2d");
         const nCtx = args.nextCanvas.getContext("2d");
@@ -308,8 +344,6 @@ export class Game {
         this.fieldCtx = fCtx;
         this.nextCtx = nCtx;
         this.tileSize = Math.floor(this.fieldPixels[0] / this.pf.width);
-        this.softDrop = false;
-        this.frameDelay = (1 / FRAMES_PER_SECOND) * 0.8;
     }
 
     reset(): void {
@@ -336,36 +370,15 @@ export class Game {
         }
     }
 
-    isPieceObstructed(direction: Move): boolean {
-        // 1. no piece right now: false
-        if (!this.currentPiece || !this.currentPiece.position) return false;
-        // 2. piece is bumping against a playfield edge: true
-        switch (direction) {
-            case Move.Down:
-                if (this.currentPiece.position[1] === this.pf.height - this.currentPiece.height)
-                    return true;
-                break;
-            case Move.Left:
-                if (this.currentPiece.position[0] === 0) return true;
-                break;
-            case Move.Right:
-                if (this.currentPiece.position[0] === this.pf.width - this.currentPiece.width)
-                    return true;
-                break;
-        }
-        // 3a. temporarily move piece in $direction
-        // 3b. check if new position intersects with existing non-empty tiles
-        // 3c. restore saved position
-        // 3d. return value from 3b.
-        const tmp: Vec2 = [...this.currentPiece.position];
-        this.move(direction);
-        const ret = this.currentPiece.intersects(this.pf);
-        this.currentPiece.position = tmp;
-        return ret;
+    move(d: Move): void {
+        if (this.currentPiece === undefined || this.currentPiece.position === undefined) return;
+        const newPos = maybeMove(this.currentPiece, this.pf, d);
+        if (newPos) this.currentPiece.position = newPos;
     }
 
     isPieceLanded(): boolean {
-        return this.isPieceObstructed(Move.Down);
+        if (!this.currentPiece || !this.currentPiece.position) return false;
+        return isPieceObstructed(this.currentPiece, this.pf, Move.Down);
     }
 
     hardDrop(): void {
@@ -396,22 +409,27 @@ export class Game {
         switch (event.code) {
             case "ArrowLeft":
             case "ArrowRight":
+                if (this.state != GameState.Running) return;
                 this.move(KEYCODE_TO_MOVE[event.code]);
                 break;
             case "ArrowDown":
+                if (this.state != GameState.Running) return;
                 if (this.gravity < 1) {
                     this.softDrop = true;
                 }
                 if (this.isPieceLanded()) this.lockPiece();
                 break;
             case "Space":
+                if (this.state != GameState.Running) return;
                 this.hardDrop();
                 break;
             case "ArrowUp":
+                if (this.state != GameState.Running) return;
                 if (!this.currentPiece) return;
                 this.currentPiece.rotate(90);
                 break;
             case "KeyZ":
+                if (this.state != GameState.Running) return;
                 if (!this.currentPiece) return;
                 this.currentPiece.rotate(-90);
                 break;
@@ -447,34 +465,6 @@ export class Game {
             case "ArrowDown":
                 this.softDrop = false;
                 break;
-        }
-    }
-
-    move(d: Move): void {
-        if (!this.currentPiece || !this.currentPiece.position) return;
-        //const tmp = this.currentPiece.position;
-        // const tmp: Vec2 = [...this.currentPiece.position];
-        const tmpX = this.currentPiece.position[0].valueOf();
-        switch (d) {
-            case Move.Left:
-                if (this.currentPiece.position[0] > 0) {
-                    this.currentPiece.position[0]--;
-                }
-                break;
-            case Move.Right:
-                if (this.currentPiece.position[0] < this.pf.width - this.currentPiece.width) {
-                    this.currentPiece.position[0]++;
-                }
-                break;
-            case Move.Down:
-                if (this.currentPiece.position[1] < this.pf.height - 1) {
-                    this.currentPiece.position[1]++;
-                }
-                break;
-        }
-        // revert if piece intersects blocks on the field
-        if (this.currentPiece.intersects(this.pf)) {
-            this.currentPiece.position[0] = tmpX;
         }
     }
 
@@ -540,8 +530,6 @@ export class Game {
     }
 
     play(): void {
-        // probably only want to run this tight loop in GameState.Running
-        let prevState: null | GameState = null;
         setInterval(() => {
             switch (this.state) {
                 case GameState.Menu:
@@ -562,6 +550,7 @@ export class Game {
                                 // position during the lock delay, so check again
                                 if (this.isPieceLanded()) this.lockPiece();
                                 // release timeout
+                                clearTimeout(this.lockTimeout);
                                 this.lockTimeout = undefined;
                             }, LOCK_DELAY_MS);
                         }

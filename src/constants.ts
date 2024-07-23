@@ -5,13 +5,13 @@ export const PLAYFIELD_WIDTH = 10;
 
 export const CANVAS_COLORS: { [key in Tile]: string } = {
     [Tile.Empty]: "black",
-    [Tile.LightBlue]: "cyan",
-    [Tile.DarkBlue]: "#1E90FF",
-    [Tile.Orange]: "orange",
-    [Tile.Yellow]: "yellow",
-    [Tile.Green]: "green",
-    [Tile.Red]: "red",
-    [Tile.Magenta]: "magenta",
+    [Tile.LightBlue]: "#00BCD4",
+    [Tile.DarkBlue]: "#3F51B5",
+    [Tile.Orange]: "#FF9800",
+    [Tile.Yellow]: "#FFEB3B",
+    [Tile.Green]: "#4CAF50",
+    [Tile.Red]: "#D32F2F",
+    [Tile.Magenta]: "#AD1457",
 };
 
 export const LOCK_DELAY_MS = 500;

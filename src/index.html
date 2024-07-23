@@ -1,11 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TS Tetris</title>
     <script type="module" src="index.js"></script>
+    <link href="https://unpkg.com/bonsai.css@latest/dist/bonsai.min.css" rel="stylesheet">
     <style>
         canvas {
             border: 1px solid black;
+        }
+        body {
+            margin-left: 10%;
+            margin-top: 20pt;
+        }
+        main {
+            display: flex;
+        }
+        #gameContainer {
+            display: flex;
+        }
+        #nextCanvas {
+            max-width: 80px;
+            max-height: 80px;
+            margin-left: 1em;
+            margin-right: 1em;
+        }
+        details {
+            height: 60%;
         }
     </style>
 </head>
@@ -15,10 +37,49 @@
     <h1>TS Tetris</h1>
 </header>
 <main>
-    <canvas id="game" width="200" height="400">
-        The game canvas goes here. Maybe your browser doesn't support it.
-    </canvas>
-    <canvas id="next" width="80" height="80"></canvas>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="300" height="600">
+            The game canvas goes here. Maybe your browser doesn't support it.
+        </canvas>
+        <canvas id="nextCanvas" width="80" height="80"></canvas>
+    </div>
+    <details open>
+        <summary>How to play</summary>
+        <table>
+            <thead>
+            <tr>
+                <th>Action</th>
+                <th>Key</th>
+            </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Left / Right</td>
+                    <td><kbd>&#x21E6</kbd> / <kbd>&#x21E8</kbd></td>
+                </tr>
+                <tr>
+                    <td>Rotate clockwise</td>
+                    <td><kbd>&#x21E7</kbd></td>
+                </tr>
+                <tr>
+                    <td>Rotate anti-clockwise</td>
+                    <td><kbd>Z</kbd></td>
+                </tr>
+                <tr>
+                    <td>Soft drop</td>
+                    <td><kbd>&#x21E9</kbd></td>
+                </tr>
+                <tr>
+                    <td>Hard drop</td>
+                    <td><kbd>Space</kbd></td>
+                </tr>
+                <tr>
+                    <td>Pause</td>
+                    <td><kbd>Pause</kbd> / <kbd>P</kbd></td>
+                </tr>
+            </tbody>
+        </table>
+    </details>
 </main>
 <footer>
     <p>&copy; Ronja Koistinen 2024</p>

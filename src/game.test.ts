@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { TileMatrix, Playfield, Tetromino, tetrominoFactory, transpose, rotate90CW } from "./game";
-import { Orientation, Tile } from "./types";
+import { TileMatrix, Playfield, Tetromino, tetrominoFactory, transpose, rotate90CW, isPieceObstructed, maybeMove } from "./game";
+import { Move, Orientation, Tile, Vec2 } from "./types";
 
 describe("utility", () => {
     test("transpose 2d array", () => {
@@ -107,10 +107,38 @@ describe("tetromino behavior", () => {
         t.rotate(90);
         expect(t.orientation).toEqual(Orientation.East);
         expect(t.tiles[t.orientation].tiles).toEqual(correctArr);
-    })
+    });
 });
 
 describe("gameplay events", () => {
+    test.each([
+        {tId: 0, pos: [0,6]},
+        {tId: 1, pos: [0,7]},
+        {tId: 2, pos: [0,6]},
+        {tId: 3, pos: [0,6]},
+        {tId: 4, pos: [0,6]},
+        {tId: 5, pos: [0,6]},
+        {tId: 6, pos: [0,6]},
+    ])("tetromino $tId in default orientation at $pos in empty playfield:\tlanded", ({tId, pos}) => {
+        const pf = new Playfield(5, 8);
+        const t = tetrominoFactory.getByIdx(tId);
+        t.position = [pos[0], pos[1]]; // dumb thing to silence a type warning
+        expect(maybeMove(t, pf, Move.Down)).toBeUndefined();
+    });
+    test.each([
+        {tId: 0, pos: [0,5]},
+        {tId: 1, pos: [0,6]},
+        {tId: 2, pos: [0,5]},
+        {tId: 3, pos: [0,5]},
+        {tId: 4, pos: [0,5]},
+        {tId: 5, pos: [0,5]},
+        {tId: 6, pos: [0,5]},
+    ])("tetromino $tId in default orientation at $pos in empty playfield:\t not landed", ({tId, pos}) => {
+        const pf = new Playfield(5, 8);
+        const t = tetrominoFactory.getByIdx(tId);
+        t.position = [pos[0], pos[1]]; // dumb thing to silence a type warning
+        expect(maybeMove(t, pf, Move.Down)).toBeDefined();
+    });
     test("clear rows", () => {
         const mtx = new TileMatrix(
             // prettier-ignore

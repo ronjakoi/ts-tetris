@@ -4,8 +4,8 @@ import { Playfield, tetrominoFactory, Game } from "./game.js";
 window.addEventListener("load", startGame);
 
 function startGame() {
-    const fieldCanvas = <HTMLCanvasElement>document.getElementById("game");
-    const nextCanvas = <HTMLCanvasElement>document.getElementById("next");
+    const fieldCanvas = <HTMLCanvasElement>document.getElementById("gameCanvas");
+    const nextCanvas = <HTMLCanvasElement>document.getElementById("nextCanvas");
 
     tetrominoFactory.shuffle();
 

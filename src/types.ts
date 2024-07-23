@@ -37,3 +37,5 @@ export enum GameState {
     GameOver,
     //HighScore,
 }
+
+export type Maybe<T> = T | undefined;
