@@ -22,3 +22,5 @@ export const STARTING_GRAVITY = 1 / 128; // 1 tile / n frames
 export const SOFTDROP_GRAVITY = 1/8;
 // piece cannot move past the bottom in 1 frame
 export const MAX_GRAVITY = PLAYFIELD_HEIGHT;
+
+export const LINES_PER_LEVEL = 10;

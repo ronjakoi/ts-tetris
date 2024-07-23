@@ -21,8 +21,8 @@
             display: flex;
         }
         #nextCanvas {
-            max-width: 80px;
-            max-height: 80px;
+            max-width: 130px;
+            max-height: 130px;
             margin-left: 1em;
             margin-right: 1em;
         }
@@ -35,13 +35,24 @@
 
 <header>
     <h1>TS Tetris</h1>
+    <p>This is a simple Tetris game I made to learn TypeScript and refresh my memory on some
+        frontend development&hellip;
+    </p>
 </header>
 <main>
     <div id="gameContainer">
         <canvas id="gameCanvas" width="300" height="600">
             The game canvas goes here. Maybe your browser doesn't support it.
         </canvas>
-        <canvas id="nextCanvas" width="80" height="80"></canvas>
+        <canvas id="nextCanvas" width="130" height="130"></canvas>
+        <table>
+            <tr>
+                <th>Level</th>
+                <td id="levelDisplay"></td>
+                <th>Score</th>
+                <td id="scoreDisplay"></td>
+            </tr>
+        </table>
     </div>
     <details open>
         <summary>How to play</summary>

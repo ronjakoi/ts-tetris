@@ -6,6 +6,7 @@ import {
     STARTING_GRAVITY,
     SOFTDROP_GRAVITY,
     LOCK_DELAY_MS,
+    LINES_PER_LEVEL,
 } from "./constants.js";
 import { Tile, Vec2, Move, GameState, KEYCODE_TO_MOVE, Orientation, Maybe } from "./types.js";
 
@@ -101,7 +102,9 @@ export class Playfield {
 
     get = (x: number, y: number): Tile => this.tiles.get(x, y);
 
-    clearRows = (lines: number[]): void => this.tiles.clearRows(lines);
+    clearRows(lines: number[]): void {
+        this.tiles.clearRows(lines);
+    }
 
     getFullRows = (): number[] => this.tiles.getFullRows();
 }
@@ -150,26 +153,16 @@ export class Tetromino {
         this.length = N.length;
     }
 
-    rotate(deg: -90 | 90): void {
+    getRotation(deg: -90 | 90): {o: Orientation, width: number, height: number} {
         // positive degrees is clockwise
-        this.orientation = modulo(this.orientation + deg, 360);
-        [this.width, this.height] = [this.height, this.width];
+        return {o: modulo(this.orientation + deg, 360), width: this.height, height: this.width};
     }
 
     get = (x: number, y: number): Tile => this.tiles[this.orientation].get(x, y);
 
-    intersects(other: Playfield | TileMatrix): boolean {
-        if (this.position === undefined) return false;
-        const y0 = Math.floor(this.position[1]);
-        const x0 = this.position[0];
-        for (let i = 0; i < this.height; i++) {
-            for (let j = 0; j < this.width; j++) {
-                if (this.get(j, i) != Tile.Empty && other.get(x0 + j, y0 + i) != Tile.Empty) {
-                    return true;
-                }
-            }
-        }
-        return false;
+    intersects(other: TileMatrix): boolean {
+        if(!this.position) return false;
+        return intersects(this.tiles[this.orientation], other, this.position);
     }
 }
 
@@ -305,8 +298,40 @@ export const maybeMove = (piece: Tetromino, pf: Playfield, move: Move): Maybe<Ve
     }
 };
 
+export const maybeRotate = (piece: Tetromino, pf: Playfield, deg: -90 | 90): Maybe<{o: Orientation, width: number, height: number}> => {
+        if (piece === undefined || piece.position === undefined) return undefined;
+        const ret = piece.getRotation(deg);
+        // revert rotation if piece extends beyond right edge or intersects
+        // with tiles already on the playfield
+        // FIXME: doesn't work :(
+        const testMatrix = piece.tiles[ret.o];
+        if (
+            piece.position[0] <= pf.width - ret.width &&
+            !intersects(piece.tiles[ret.o], pf.tiles, piece.position)
+        ) {
+            return ret;
+        } else {
+            return undefined;
+        }
+}
+
 export const isPieceObstructed = (piece: Tetromino, pf: Playfield, direction: Move): boolean => {
     return maybeMove(piece, pf, direction) === undefined ? true : false;
+};
+
+const computeScore = (level: number, n: number): number => {
+    switch (level) {
+        case 4:
+            return 1200 * (n + 1);
+        case 3:
+            return 300 * (n + 1);
+        case 2:
+            return 100 * (n + 1);
+        case 1:
+            return 40 * (n + 1);
+        default:
+            return 0;
+    }
 };
 
 export class Game {
@@ -324,6 +349,10 @@ export class Game {
     softDrop: boolean = false;
     frameDelay: number = (1 / FRAMES_PER_SECOND) * 0.8;
     lockTimeout: NodeJS.Timeout | undefined = undefined;
+    level: number = 1;
+    levelProgress: number = 0;
+    levelDisplay: HTMLElement;
+    scoreDisplay: HTMLElement;
 
     constructor(args: {
         fieldCanvas: HTMLCanvasElement;
@@ -344,6 +373,10 @@ export class Game {
         this.fieldCtx = fCtx;
         this.nextCtx = nCtx;
         this.tileSize = Math.floor(this.fieldPixels[0] / this.pf.width);
+        this.levelDisplay = document.getElementById("levelDisplay")!;
+        this.levelDisplay.textContent = `${this.level}`;
+        this.scoreDisplay = document.getElementById("scoreDisplay")!;
+        this.scoreDisplay.textContent = `${this.score}`;
     }
 
     reset(): void {
@@ -353,9 +386,18 @@ export class Game {
         this.nextPiece = tetrominoFactory.getNext();
         this.state = GameState.Running;
         this.score = 0;
+        this.level = 1;
+        this.levelDisplay.textContent = "1";
+        this.scoreDisplay.textContent = "0";
         this.gravity = STARTING_GRAVITY;
         this.softDrop = false;
-        this.blankCanvas();
+        this.blankCanvas(this.fieldCtx);
+        this.blankCanvas(this.nextCtx);
+    }
+
+    updateScoreAndLevel(): void {
+        this.scoreDisplay.textContent = `${this.score}`;
+        this.levelDisplay.textContent = `${this.level}`;
     }
 
     lockPiece(): void {
@@ -367,6 +409,14 @@ export class Game {
             this.pf.tiles = this.pf.overlay(this.currentPiece);
             this.currentPiece = this.nextPiece;
             this.nextPiece = tetrominoFactory.getNext();
+            const fullRows = this.pf.getFullRows();
+            const fullRowsCount = fullRows.length;
+            if (fullRowsCount > 0) {
+                this.pf.clearRows(fullRows);
+                this.score += computeScore(this.level, fullRowsCount);
+                this.maybeNextLevel(fullRowsCount);
+                this.updateScoreAndLevel();
+            }
         }
     }
 
@@ -389,19 +439,12 @@ export class Game {
     }
 
     rotate(deg: -90 | 90): void {
-        if (this.currentPiece === undefined || this.currentPiece.position === undefined) return;
-        const tmpO = this.currentPiece.orientation.valueOf();
-        const tmpDim = [this.currentPiece.width.valueOf(), this.currentPiece.height.valueOf()];
-        this.currentPiece.rotate(deg);
-        // revert rotation if piece extends beyond right edge or intersects
-        // with tiles already on the playfield
-        // FIXME: doesn't work :(
-        if (
-            this.currentPiece.position[0] > this.pf.width - this.currentPiece.width ||
-            this.currentPiece.intersects(this.pf)
-        ) {
-            this.currentPiece.orientation = tmpO;
-            [this.currentPiece.width, this.currentPiece.height] = tmpDim;
+        if(!this.currentPiece) return;
+        const newRotation = maybeRotate(this.currentPiece, this.pf, deg);
+        if(newRotation !== undefined) {
+            this.currentPiece.orientation = newRotation.o;
+            this.currentPiece.width = newRotation.width;
+            this.currentPiece.height = newRotation.height;
         }
     }
 
@@ -426,12 +469,12 @@ export class Game {
             case "ArrowUp":
                 if (this.state != GameState.Running) return;
                 if (!this.currentPiece) return;
-                this.currentPiece.rotate(90);
+                this.rotate(90);
                 break;
             case "KeyZ":
                 if (this.state != GameState.Running) return;
                 if (!this.currentPiece) return;
-                this.currentPiece.rotate(-90);
+                this.rotate(-90);
                 break;
             case "Pause":
             case "KeyP":
@@ -483,6 +526,28 @@ export class Game {
         }
     }
 
+    drawNext(): void {
+        this.blankCanvas(this.nextCtx);
+        if (!this.nextPiece) return;
+        const [pxW, pxH] = [
+            this.nextPiece.width * this.tileSize,
+            this.nextPiece.height * this.tileSize,
+        ];
+        const topLeftX = (this.nextPixels[0] - this.nextPiece.width * this.tileSize) / 2;
+        const topLeftY = (this.nextPixels[1] - this.nextPiece.height * this.tileSize) / 2;
+        for (let i = 0; i < this.nextPiece.height; i++) {
+            for (let j = 0; j < this.nextPiece.width; j++) {
+                this.nextCtx.fillStyle = CANVAS_COLORS[this.nextPiece.get(j, i)];
+                this.nextCtx.fillRect(
+                    topLeftX + j * this.tileSize,
+                    topLeftY + i * this.tileSize,
+                    this.tileSize,
+                    this.tileSize,
+                );
+            }
+        }
+    }
+
     drawTextOverlay(text: string): void {
         this.drawGame();
         this.fieldCtx.save();
@@ -498,7 +563,7 @@ export class Game {
     }
 
     drawMenu(): void {
-        this.blankCanvas();
+        this.blankCanvas(this.fieldCtx);
         this.fieldCtx.fillStyle = "white";
         this.fieldCtx.font = "bold 12pt sans-serif";
         this.fieldCtx.textAlign = "center";
@@ -507,11 +572,12 @@ export class Game {
         this.fieldCtx.fillText("Press Enter to start", x, y);
     }
 
-    blankCanvas(): void {
-        this.fieldCtx.save();
-        this.fieldCtx.fillStyle = "black";
-        this.fieldCtx.fillRect(0, 0, this.fieldPixels[0], this.fieldPixels[1]);
-        this.fieldCtx.restore();
+    blankCanvas(ctx: CanvasRenderingContext2D): void {
+        const [x, y] = ctx === this.fieldCtx ? this.fieldPixels : this.nextPixels;
+        ctx.save();
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, x, y);
+        ctx.restore();
     }
 
     doFall(): void {
@@ -529,11 +595,21 @@ export class Game {
         }
     }
 
+    maybeNextLevel(lines: number): void {
+        this.levelProgress += lines;
+        if (this.levelProgress >= LINES_PER_LEVEL) {
+            this.level++;
+            this.levelProgress = 0;
+            this.gravity = Math.min(this.pf.height, this.gravity * 2);
+        }
+    }
+
     play(): void {
         setInterval(() => {
             switch (this.state) {
                 case GameState.Menu:
                     this.drawMenu();
+                    this.blankCanvas(this.nextCtx);
                     break;
                 case GameState.Running:
                     if (this.currentPiece!.position === undefined) {
@@ -557,8 +633,8 @@ export class Game {
                     } else {
                         this.doFall();
                     }
-                    this.pf.clearRows(this.pf.getFullRows());
                     this.drawGame();
+                    this.drawNext();
                     break;
                 case GameState.GameOver:
                     this.drawTextOverlay("Game Over");
