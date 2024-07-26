@@ -1,6 +1,8 @@
 import { describe, expect, test } from "vitest";
-import { TileMatrix, Playfield, Tetromino, tetrominoFactory, transpose, rotate90CW, isPieceObstructed, maybeMove } from "./game";
 import { Move, Orientation, Tile, Vec2 } from "./types";
+import { transpose, tetrominoFactory, rotate90CW, maybeRotate, maybeMove } from "./tetromino";
+import { Playfield } from "./game";
+import { TileMatrix } from "./tiles";
 
 describe("utility", () => {
     test("transpose 2d array", () => {
@@ -101,10 +103,16 @@ describe("tetromino behavior", () => {
     });
 
     test("rotate J tetromino 90°", () => {
+        const pf = new Playfield(5, 8);
         const t = tetrominoFactory.getByIdx(3);
+        t.position = [1,1];
         const correctArr = [Tile.DarkBlue, Tile.DarkBlue, Tile.DarkBlue,
                             Tile.Empty, Tile.DarkBlue, Tile.Empty];
-        t.rotate(90);
+        const r = maybeRotate(t, pf, 90);
+        expect(r).toBeDefined();
+        t.orientation = r!.o;
+        t.width = r!.width;
+        t.height = r!.height;
         expect(t.orientation).toEqual(Orientation.East);
         expect(t.tiles[t.orientation].tiles).toEqual(correctArr);
     });
