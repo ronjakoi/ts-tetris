@@ -3,9 +3,6 @@
 This is a Tetris game that runs in HTML Canvas.
 I just made this to learn some TypeScript over the summer. Very simple.
 
-(Something is still weird about rotating near the right edge.
-I will fix it some day soon...)
-
 ## Using
 
 To compile:
