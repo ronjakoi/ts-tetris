@@ -185,18 +185,18 @@ export const maybeMove = (piece: Tetromino, pf: Playfield, move: Move): Maybe<Ve
     }
 };
 
-export const maybeRotate = (piece: Tetromino, pf: Playfield, deg: -90 | 90): Maybe<Orientation> => {
+export const maybeRotate = (piece: Tetromino, pf: Playfield, deg: -90 | 90): Maybe<[Orientation, Vec2]> => {
     if (piece.position === undefined) return undefined;
     const newOrientation = piece.getRotation(deg);
-    // revert rotation if piece extends beyond right edge or intersects
-    // with tiles already on the playfield
-    // TODO: wall kick if rotating at the right edge and there is room
     const testMatrix = piece.tiles[newOrientation];
+    // Scoot to the left if rotating the piece would put it past the right edge.
+    // This feels nicer than returning `undefined`, i.e. disallowing rotations too close to the edge
+    const newX = Math.min(piece.position[0], pf.width - testMatrix.width);
     if (
-        piece.position[0] <= pf.width - piece.tiles[newOrientation].width &&
-        !piece.tiles[newOrientation].intersects(pf.tiles, piece.position)
+        testMatrix.inBoundsOf(pf.tiles, [newX, piece.position[1]]) &&
+        !testMatrix.intersects(pf.tiles, piece.position)
     ) {
-        return newOrientation;
+        return [newOrientation, [newX, piece.position[1]]];
     } else {
         return undefined;
     }

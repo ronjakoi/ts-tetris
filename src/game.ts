@@ -143,11 +143,12 @@ export class Game {
 
     rotate(deg: -90 | 90): void {
         if (!this.currentPiece) return;
-        const newOrientation = maybeRotate(this.currentPiece, this.pf, deg);
-        if (newOrientation !== undefined) {
-            this.currentPiece.orientation = newOrientation;
-            this.currentPiece.width = this.currentPiece.tiles[newOrientation].width;
-            this.currentPiece.height = this.currentPiece.tiles[newOrientation].height;
+        const temp = maybeRotate(this.currentPiece, this.pf, deg);
+        if (temp !== undefined) {
+            this.currentPiece.orientation = temp[0];
+            this.currentPiece.position = temp[1];
+            this.currentPiece.width = this.currentPiece.tiles[temp[0]].width;
+            this.currentPiece.height = this.currentPiece.tiles[temp[0]].height;
         }
     }
 
