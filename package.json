@@ -2,13 +2,16 @@
   "devDependencies": {
     "prettier": "3.3.2",
     "typescript": "^5.5.3",
+    "vite": "^5.3.5",
     "vitest": "^2.0.1"
   },
   "directories": {
     "tests": "tests"
   },
   "scripts": {
-    "test": "vitest"
+    "test": "vitest",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "type": "module"
 }

@@ -1,6 +1,7 @@
 import { Tetromino } from "./tetromino.js";
 import { Move, Orientation, Tile, Vec2 } from "./types.js";
 
+// overcomplicated lol
 export interface Matrix {
     tiles: any;
     width: number;
