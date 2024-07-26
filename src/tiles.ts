@@ -1,17 +1,31 @@
 import { Tetromino } from "./tetromino.js";
-import { Tile, Vec2 } from "./types.js";
+import { Move, Orientation, Tile, Vec2 } from "./types.js";
 
-export class TileMatrix {
+export interface Matrix {
+    tiles: any;
+    width: number;
+    height: number;
+    position?: Vec2;
+    orientation?: Orientation;
+    get(x: number, y: number): Tile;
+    overlay(other: Matrix, position?: Vec2): Matrix;
+    intersects?(other: Matrix, position?: Vec2): boolean;
+    translate?(direction: Move): Matrix;
+    rotate?(deg: -90 | 90): Matrix;
+    inBoundsOf?(other: Matrix, position?: Vec2): boolean;
+    clearRows?(rows: number[]): void;
+    getFullRows?(): number[];
+}
+
+export class TileMatrix implements Matrix {
     tiles: Tile[];
     height: number;
     width: number;
-    readonly length: number;
 
     constructor(t: Tile[], w: number, h: number) {
         this.tiles = Array.from(t);
         this.height = h;
         this.width = w;
-        this.length = this.tiles.length;
     }
 
     static newEmpty(width: number, height: number) {
@@ -21,7 +35,7 @@ export class TileMatrix {
 
     get = (x: number, y: number): Tile => this.tiles[y * this.width + x];
 
-    overlay(other: TileMatrix | Tetromino, position?: Vec2): TileMatrix {
+    overlay(other: Matrix, position?: Vec2): Matrix {
         const ret = new TileMatrix(this.tiles, this.width, this.height);
 
         let pos: Vec2;
@@ -43,6 +57,20 @@ export class TileMatrix {
             }
         }
         return ret;
+    }
+
+    intersects(other: Matrix, position?: Vec2): boolean {
+        const pos = position ? position : [0, 0];
+        const y0 = Math.floor(pos[1]);
+        const x0 = pos[0];
+        for (let i = 0; i < this.height; i++) {
+            for (let j = 0; j < this.width; j++) {
+                if (this.get(j, i) != Tile.Empty && other.get(x0 + j, y0 + i) != Tile.Empty) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     clearRows(rows: number[]): void {
@@ -68,17 +96,14 @@ export class TileMatrix {
                 .every((col) => col != Tile.Empty),
         );
     }
-}
 
-export const intersects = (a: TileMatrix, b: TileMatrix, pos: Vec2): boolean => {
-    const y0 = Math.floor(pos[1]);
-    const x0 = pos[0];
-    for (let i = 0; i < a.height; i++) {
-        for (let j = 0; j < a.width; j++) {
-            if (a.get(j, i) != Tile.Empty && b.get(x0 + j, y0 + i) != Tile.Empty) {
-                return true;
-            }
-        }
+    inBoundsOf(other: Matrix, position?: Vec2): boolean {
+        const pos = position ? position : [0, 0];
+        return (
+            pos[0] >= 0 &&
+            pos[1] >= 0 &&
+            pos[0] <= other.width - this.width &&
+            Math.floor(pos[1]) <= other.height - this.height
+        );
     }
-    return false;
-};
+}

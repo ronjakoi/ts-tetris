@@ -1,8 +1,9 @@
 import { CANVAS_COLORS, PLAYFIELD_WIDTH } from "./constants.js";
 import { Tetromino } from "./tetromino.js";
-import { TileMatrix } from "./tiles.js";
-import { Vec2 } from "./types.js";
+import { Matrix, TileMatrix } from "./tiles.js";
+import { Maybe, Vec2 } from "./types.js";
 
+type Drawable = Matrix;
 export class Renderer {
 
     tileSize: number;
@@ -41,7 +42,7 @@ export class Renderer {
         this.levelDisplay.textContent = `${level}`;
     }
 
-    drawGame(mtx: TileMatrix): void {
+    drawGame(mtx: Drawable): void {
         for (let i = 0; i < mtx.height; i++) {
             for (let j = 0; j < mtx.width; j++) {
                 this.fieldCtx.fillStyle = CANVAS_COLORS[mtx.get(j, i)];
@@ -55,7 +56,7 @@ export class Renderer {
         }
     }
 
-    drawNext(nextPiece: Tetromino | undefined): void {
+    drawNext(nextPiece: Maybe<Drawable>): void {
         this.blankCanvas(this.nextCtx);
         if (!nextPiece) return;
         const [pxW, pxH] = [
@@ -77,7 +78,7 @@ export class Renderer {
         }
     }
 
-    drawTextOverlay(mtx: TileMatrix, text: string): void {
+    drawTextOverlay(mtx: Drawable, text: string): void {
         this.drawGame(mtx);
         this.fieldCtx.save();
         this.fieldCtx.fillStyle = "rgba(0, 0, 0, .65)";

@@ -1,5 +1,5 @@
 import { Playfield } from "./game.js";
-import { TileMatrix, intersects } from "./tiles.js";
+import { Matrix, TileMatrix } from "./tiles.js";
 import { Orientation, Vec2, Tile, Move, Maybe } from "./types.js";
 
 // matrix rotation helpers
@@ -9,8 +9,7 @@ const makeTileArray = (mtx: boolean[][], tt: Tile): Tile[] =>
 export const transpose = <T>(arr: T[][]): T[][] =>
     arr[0].map((_: T, i: number) => arr.map((row) => row[i]));
 
-export const rotate90CW = <T>(arr: T[][]): T[][] =>
-    transpose(arr).map((row) => makeReversed(row));
+export const rotate90CW = <T>(arr: T[][]): T[][] => transpose(arr).map((row) => makeReversed(row));
 
 const makeReversed = <T>(arr: T[]): T[] => {
     const ret = Array.from(arr);
@@ -22,13 +21,12 @@ const makeReversed = <T>(arr: T[]): T[] => {
 // negative operands
 const modulo = (n: number, d: number): number => ((n % d) + d) % d;
 
-export class Tetromino {
+export class Tetromino implements Matrix {
     orientation: Orientation = Orientation.North;
     tiles: { [key in Orientation]: TileMatrix };
     width: number;
     height: number;
     position: Vec2 | undefined = undefined;
-    readonly length: number;
 
     constructor(mtxNorth: boolean[][], tt: Tile) {
         this.width = mtxNorth[0].length;
@@ -47,19 +45,27 @@ export class Tetromino {
             [Orientation.South]: new TileMatrix(S, this.width, this.height),
             [Orientation.West]: new TileMatrix(W, this.height, this.width),
         };
-        this.length = N.length;
     }
 
-    getRotation(deg: -90 | 90): {o: Orientation, width: number, height: number} {
+    getRotation(deg: -90 | 90): Orientation {
         // positive degrees is clockwise
-        return {o: modulo(this.orientation + deg, 360), width: this.height, height: this.width};
+        return modulo(this.orientation + deg, 360);
     }
 
     get = (x: number, y: number): Tile => this.tiles[this.orientation].get(x, y);
 
-    intersects(other: TileMatrix): boolean {
-        if(!this.position) return false;
-        return intersects(this.tiles[this.orientation], other, this.position);
+    intersects(other: Matrix): boolean {
+        if (!this.position) return false;
+        return this.tiles[this.orientation].intersects(other, this.position);
+    }
+
+    overlay(other: Matrix, position?: Vec2): Matrix {
+        return this.tiles[this.orientation].overlay(other, position);
+    }
+
+    inBoundsOf(other: Matrix, position?: Vec2): boolean {
+        const pos = position ? position : this.position;
+        return this.tiles[this.orientation].inBoundsOf(other, pos);
     }
 }
 
@@ -170,14 +176,8 @@ export const maybeMove = (piece: Tetromino, pf: Playfield, move: Move): Maybe<Ve
             break;
     }
     if (
-        // past left edge
-        newPosition[0] < 0 ||
-        // past right edge
-        newPosition[0] > pf.width - piece.width ||
-        // past bottom edge
-        Math.floor(newPosition[1]) > pf.height - piece.height ||
-        // overlapping with previous tiles
-        intersects(piece.tiles[piece.orientation], pf.tiles, newPosition)
+        !piece.inBoundsOf(pf.tiles, newPosition) ||
+        piece.tiles[piece.orientation].intersects(pf.tiles, newPosition)
     ) {
         return undefined;
     } else {
@@ -185,22 +185,22 @@ export const maybeMove = (piece: Tetromino, pf: Playfield, move: Move): Maybe<Ve
     }
 };
 
-export const maybeRotate = (piece: Tetromino, pf: Playfield, deg: -90 | 90): Maybe<{o: Orientation, width: number, height: number}> => {
-        if (piece.position === undefined) return undefined;
-        const ret = piece.getRotation(deg);
-        // revert rotation if piece extends beyond right edge or intersects
-        // with tiles already on the playfield
-        const testMatrix = piece.tiles[ret.o];
-        if (
-            piece.position[0] <= pf.width - ret.width &&
-            !intersects(piece.tiles[ret.o], pf.tiles, piece.position)
-        ) {
-            return ret;
-        } else {
-            return undefined;
-        }
-}
-
-export const isPieceObstructed = (piece: Tetromino, pf: Playfield, direction: Move): boolean => {
-    return maybeMove(piece, pf, direction) === undefined ? true : false;
+export const maybeRotate = (piece: Tetromino, pf: Playfield, deg: -90 | 90): Maybe<Orientation> => {
+    if (piece.position === undefined) return undefined;
+    const newOrientation = piece.getRotation(deg);
+    // revert rotation if piece extends beyond right edge or intersects
+    // with tiles already on the playfield
+    // TODO: wall kick if rotating at the right edge and there is room
+    const testMatrix = piece.tiles[newOrientation];
+    if (
+        piece.position[0] <= pf.width - piece.tiles[newOrientation].width &&
+        !piece.tiles[newOrientation].intersects(pf.tiles, piece.position)
+    ) {
+        return newOrientation;
+    } else {
+        return undefined;
+    }
 };
+
+export const isPieceObstructed = (piece: Tetromino, pf: Playfield, direction: Move): boolean =>
+    maybeMove(piece, pf, direction) === undefined ? true : false;

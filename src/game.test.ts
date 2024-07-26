@@ -29,6 +29,19 @@ describe("utility", () => {
             [5,0,2]
         ]);
     })
+    test("matrix in bounds of other matrix", () => {
+        const a = TileMatrix.newEmpty(2, 2);
+        const b = TileMatrix.newEmpty(3, 3);
+        expect(a.inBoundsOf(b, [0,0])).toBeTruthy();
+        expect(a.inBoundsOf(b, [1,1])).toBeTruthy();
+    })
+    test("matrix out of bounds of other matrix", () => {
+        const a = TileMatrix.newEmpty(2, 2);
+        const b = TileMatrix.newEmpty(3, 3);
+        expect(a.inBoundsOf(b, [-1,0])).toBeFalsy();
+        expect(a.inBoundsOf(b, [2,1])).toBeFalsy();
+        expect(a.inBoundsOf(b, [1,2])).toBeFalsy();
+    })
 });
 
 describe("tetromino behavior", () => {
@@ -110,9 +123,9 @@ describe("tetromino behavior", () => {
                             Tile.Empty, Tile.DarkBlue, Tile.Empty];
         const r = maybeRotate(t, pf, 90);
         expect(r).toBeDefined();
-        t.orientation = r!.o;
-        t.width = r!.width;
-        t.height = r!.height;
+        t.orientation = r!;
+        t.width = t.tiles[r!].width;
+        t.height = t.tiles[r!].height;
         expect(t.orientation).toEqual(Orientation.East);
         expect(t.tiles[t.orientation].tiles).toEqual(correctArr);
     });

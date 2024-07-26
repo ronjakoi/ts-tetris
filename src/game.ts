@@ -16,10 +16,10 @@ import {
     maybeRotate,
     isPieceObstructed,
 } from "./tetromino.js";
-import { TileMatrix } from "./tiles.js";
-import { Tile, Vec2, Move, GameState, KEYCODE_TO_MOVE } from "./types.js";
+import { Matrix, TileMatrix } from "./tiles.js";
+import { Tile, Vec2, Move, GameState, KEYCODE_TO_MOVE, Maybe } from "./types.js";
 
-export class Playfield {
+export class Playfield implements Matrix {
     tiles: TileMatrix;
     height: number;
     width: number;
@@ -33,8 +33,8 @@ export class Playfield {
         this.tiles = new TileMatrix(mtx, this.width, this.height);
     }
 
-    overlay = (other?: TileMatrix | Tetromino, position?: Vec2): TileMatrix =>
-        other ? this.tiles.overlay(other, position) : this.tiles;
+    overlay = (other: Maybe<Matrix>, position?: Vec2): Matrix =>
+        other !== undefined ? this.tiles.overlay(other, position) : this.tiles;
 
     get = (x: number, y: number): Tile => this.tiles.get(x, y);
 
@@ -63,14 +63,14 @@ const computeScore = (clearedLines: number, level: number): number => {
 export class Game {
     pf: Playfield;
     renderer: Renderer;
-    currentPiece: Tetromino | undefined = undefined;
-    nextPiece: Tetromino | undefined = undefined;
+    currentPiece: Maybe<Tetromino> = undefined;
+    nextPiece: Maybe<Tetromino> = undefined;
     state: GameState = GameState.Menu;
     score: number = 0;
     gravity: number = STARTING_GRAVITY;
     softDrop: boolean = false;
     frameDelay: number = (1 / FRAMES_PER_SECOND) * 0.8;
-    lockTimeout: NodeJS.Timeout | undefined = undefined;
+    lockTimeout: Maybe<NodeJS.Timeout> = undefined;
     level: number = 1;
     levelProgress: number = 0;
 
@@ -109,7 +109,7 @@ export class Game {
             this.state = GameState.GameOver;
             return;
         }
-        this.pf.tiles = this.pf.overlay(this.currentPiece);
+        this.pf.tiles = this.pf.overlay(this.currentPiece) as TileMatrix;
         this.currentPiece = this.nextPiece;
         this.nextPiece = tetrominoFactory.getNext();
         const fullRows = this.pf.getFullRows();
@@ -143,11 +143,11 @@ export class Game {
 
     rotate(deg: -90 | 90): void {
         if (!this.currentPiece) return;
-        const newRotation = maybeRotate(this.currentPiece, this.pf, deg);
-        if (newRotation !== undefined) {
-            this.currentPiece.orientation = newRotation.o;
-            this.currentPiece.width = newRotation.width;
-            this.currentPiece.height = newRotation.height;
+        const newOrientation = maybeRotate(this.currentPiece, this.pf, deg);
+        if (newOrientation !== undefined) {
+            this.currentPiece.orientation = newOrientation;
+            this.currentPiece.width = this.currentPiece.tiles[newOrientation].width;
+            this.currentPiece.height = this.currentPiece.tiles[newOrientation].height;
         }
     }
 
@@ -239,6 +239,7 @@ export class Game {
     }
 
     play(): void {
+        tetrominoFactory.shuffle();
         setInterval(() => {
             if (this.currentPiece !== undefined && this.currentPiece.position === undefined) {
                 this.currentPiece.position = [
