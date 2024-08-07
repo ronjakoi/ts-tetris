@@ -16,7 +16,7 @@ You can also just play it here on my website: https://hermoraun.io/tetris/
 
 ## Copying
 
-Licensed under the MIT License, see [LICENSE].
+Licensed under the MIT License, see [LICENSE](LICENSE).
 
 ## TODO
 
