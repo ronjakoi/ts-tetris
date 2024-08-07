@@ -174,12 +174,12 @@ export const maybeMove = (piece: Tetromino, pf: Playfield, move: Move): Maybe<Ve
             break;
     }
     if (
-        !piece.inBoundsOf(pf.tiles, newPosition) ||
-        piece.tiles[piece.orientation].intersects(pf.tiles, newPosition)
+        piece.inBoundsOf(pf.tiles, newPosition) &&
+        !piece.tiles[piece.orientation].intersects(pf.tiles, newPosition)
     ) {
-        return undefined;
-    } else {
         return newPosition;
+    } else {
+        return undefined;
     }
 };
 
@@ -205,4 +205,4 @@ export const maybeRotate = (
 };
 
 export const isPieceObstructed = (piece: Tetromino, pf: Playfield, direction: Move): boolean =>
-    maybeMove(piece, pf, direction) === undefined ? true : false;
+    maybeMove(piece, pf, direction) === undefined;
