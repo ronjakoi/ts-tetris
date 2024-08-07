@@ -183,7 +183,11 @@ export const maybeMove = (piece: Tetromino, pf: Playfield, move: Move): Maybe<Ve
     }
 };
 
-export const maybeRotate = (piece: Tetromino, pf: Playfield, deg: -90 | 90): Maybe<[Orientation, Vec2]> => {
+export const maybeRotate = (
+    piece: Tetromino,
+    pf: Playfield,
+    deg: -90 | 90,
+): Maybe<[Orientation, Vec2]> => {
     if (piece.position === undefined) return undefined;
     const newOrientation = piece.getRotation(deg);
     const testMatrix = piece.tiles[newOrientation];

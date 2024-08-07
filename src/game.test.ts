@@ -7,41 +7,41 @@ import { TileMatrix } from "./tiles";
 describe("utility", () => {
     test("transpose 2d array", () => {
         const arr = [
-            [1,0,2],
-            [0,3,0],
-            [4,0,5],
-            ];
+            [1, 0, 2],
+            [0, 3, 0],
+            [4, 0, 5],
+        ];
         expect(transpose(arr)).toEqual([
-            [1,0,4],
-            [0,3,0],
-            [2,0,5],
-        ])
+            [1, 0, 4],
+            [0, 3, 0],
+            [2, 0, 5],
+        ]);
     });
     test("rotate 2d array 90° clockwise", () => {
         const arr = [
-            [1,0,2],
-            [0,3,0],
-            [4,0,5],
-            ];
+            [1, 0, 2],
+            [0, 3, 0],
+            [4, 0, 5],
+        ];
         expect(rotate90CW(arr)).toEqual([
-            [4,0,1],
-            [0,3,0],
-            [5,0,2]
+            [4, 0, 1],
+            [0, 3, 0],
+            [5, 0, 2],
         ]);
-    })
+    });
     test("matrix in bounds of other matrix", () => {
         const a = TileMatrix.newEmpty(2, 2);
         const b = TileMatrix.newEmpty(3, 3);
-        expect(a.inBoundsOf(b, [0,0])).toBeTruthy();
-        expect(a.inBoundsOf(b, [1,1])).toBeTruthy();
-    })
+        expect(a.inBoundsOf(b, [0, 0])).toBeTruthy();
+        expect(a.inBoundsOf(b, [1, 1])).toBeTruthy();
+    });
     test("matrix out of bounds of other matrix", () => {
         const a = TileMatrix.newEmpty(2, 2);
         const b = TileMatrix.newEmpty(3, 3);
-        expect(a.inBoundsOf(b, [-1,0])).toBeFalsy();
-        expect(a.inBoundsOf(b, [2,1])).toBeFalsy();
-        expect(a.inBoundsOf(b, [1,2])).toBeFalsy();
-    })
+        expect(a.inBoundsOf(b, [-1, 0])).toBeFalsy();
+        expect(a.inBoundsOf(b, [2, 1])).toBeFalsy();
+        expect(a.inBoundsOf(b, [1, 2])).toBeFalsy();
+    });
 });
 
 describe("tetromino behavior", () => {
@@ -118,7 +118,8 @@ describe("tetromino behavior", () => {
     test("rotate J tetromino 90°", () => {
         const pf = new Playfield(5, 8);
         const t = tetrominoFactory.getByIdx(3);
-        t.position = [1,1];
+        t.position = [1, 1];
+        // prettier-ignore
         const correctArr = [Tile.DarkBlue, Tile.DarkBlue, Tile.DarkBlue,
                             Tile.Empty, Tile.DarkBlue, Tile.Empty];
         const r = maybeRotate(t, pf, 90);
@@ -133,33 +134,39 @@ describe("tetromino behavior", () => {
 
 describe("gameplay events", () => {
     test.each([
-        {tId: 0, pos: [0,6]},
-        {tId: 1, pos: [0,7]},
-        {tId: 2, pos: [0,6]},
-        {tId: 3, pos: [0,6]},
-        {tId: 4, pos: [0,6]},
-        {tId: 5, pos: [0,6]},
-        {tId: 6, pos: [0,6]},
-    ])("tetromino $tId in default orientation at $pos in empty playfield:\tlanded", ({tId, pos}) => {
-        const pf = new Playfield(5, 8);
-        const t = tetrominoFactory.getByIdx(tId);
-        t.position = [pos[0], pos[1]]; // dumb thing to silence a type warning
-        expect(maybeMove(t, pf, Move.Down)).toBeUndefined();
-    });
+        { tId: 0, pos: [0, 6] },
+        { tId: 1, pos: [0, 7] },
+        { tId: 2, pos: [0, 6] },
+        { tId: 3, pos: [0, 6] },
+        { tId: 4, pos: [0, 6] },
+        { tId: 5, pos: [0, 6] },
+        { tId: 6, pos: [0, 6] },
+    ])(
+        "tetromino $tId in default orientation at $pos in empty playfield:\tlanded",
+        ({ tId, pos }) => {
+            const pf = new Playfield(5, 8);
+            const t = tetrominoFactory.getByIdx(tId);
+            t.position = [pos[0], pos[1]]; // dumb thing to silence a type warning
+            expect(maybeMove(t, pf, Move.Down)).toBeUndefined();
+        },
+    );
     test.each([
-        {tId: 0, pos: [0,5]},
-        {tId: 1, pos: [0,6]},
-        {tId: 2, pos: [0,5]},
-        {tId: 3, pos: [0,5]},
-        {tId: 4, pos: [0,5]},
-        {tId: 5, pos: [0,5]},
-        {tId: 6, pos: [0,5]},
-    ])("tetromino $tId in default orientation at $pos in empty playfield:\t not landed", ({tId, pos}) => {
-        const pf = new Playfield(5, 8);
-        const t = tetrominoFactory.getByIdx(tId);
-        t.position = [pos[0], pos[1]]; // dumb thing to silence a type warning
-        expect(maybeMove(t, pf, Move.Down)).toBeDefined();
-    });
+        { tId: 0, pos: [0, 5] },
+        { tId: 1, pos: [0, 6] },
+        { tId: 2, pos: [0, 5] },
+        { tId: 3, pos: [0, 5] },
+        { tId: 4, pos: [0, 5] },
+        { tId: 5, pos: [0, 5] },
+        { tId: 6, pos: [0, 5] },
+    ])(
+        "tetromino $tId in default orientation at $pos in empty playfield:\t not landed",
+        ({ tId, pos }) => {
+            const pf = new Playfield(5, 8);
+            const t = tetrominoFactory.getByIdx(tId);
+            t.position = [pos[0], pos[1]]; // dumb thing to silence a type warning
+            expect(maybeMove(t, pf, Move.Down)).toBeDefined();
+        },
+    );
     test("clear rows", () => {
         const mtx = new TileMatrix(
             // prettier-ignore
@@ -176,7 +183,7 @@ describe("gameplay events", () => {
             5,
             8,
         );
-        mtx.clearRows([5,6,7]);
+        mtx.clearRows([5, 6, 7]);
         expect(mtx.tiles).toEqual(
             // prettier-ignore
             [
@@ -188,7 +195,7 @@ describe("gameplay events", () => {
                 0,0,3,0,1,
                 2,2,2,0,4,
                 2,2,2,0,1,
-            ]
+            ],
         );
     });
     test("find full rows", () => {
@@ -208,7 +215,7 @@ describe("gameplay events", () => {
             8,
         );
         const fullRows = mtx.getFullRows();
-        expect(fullRows).toEqual([5,6,7]);
+        expect(fullRows).toEqual([5, 6, 7]);
     });
     test("shuffle random bag", () => {
         const bagBefore = [...tetrominoFactory.randomBag];
@@ -219,5 +226,5 @@ describe("gameplay events", () => {
         const bagBeforeSorted = [...bagBefore].sort();
         const randomBagSorted = [...tetrominoFactory.randomBag].sort();
         expect(bagBeforeSorted).toEqual(randomBagSorted);
-    })
+    });
 });
