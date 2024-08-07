@@ -69,8 +69,14 @@ export class Tetromino implements Matrix {
     }
 }
 
+interface TetrominoTemplate {
+    name: string;
+    color: Tile;
+    matrix: boolean[][];
+}
+
 export const tetrominoFactory: {
-    templates: any[];
+    templates: TetrominoTemplate[];
     randomBag: number[];
     currentIndex: number;
     shuffle: () => void;
