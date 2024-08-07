@@ -149,10 +149,8 @@ export const tetrominoFactory: {
         }
         return this.getByIdx(this.randomBag[this.currentIndex++]);
     },
-    getByName: function (name: string): Tetromino | undefined {
-        const t = this.templates.find((x) => {
-            x.name === name;
-        });
+    getByName: function (name: string): Maybe<Tetromino> {
+        const t = this.templates.find((x) => x.name === name);
         return t === undefined ? undefined : new Tetromino(t.matrix, t.color);
     },
     getByIdx: function (idx: number): Tetromino {

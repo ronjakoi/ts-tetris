@@ -123,9 +123,9 @@ describe("tetromino behavior", () => {
                             Tile.Empty, Tile.DarkBlue, Tile.Empty];
         const r = maybeRotate(t, pf, 90);
         expect(r).toBeDefined();
-        t.orientation = r!;
-        t.width = t.tiles[r!].width;
-        t.height = t.tiles[r!].height;
+        t.orientation = r![0];
+        t.width = t.tiles[r![0]].width;
+        t.height = t.tiles[r![0]].height;
         expect(t.orientation).toEqual(Orientation.East);
         expect(t.tiles[t.orientation].tiles).toEqual(correctArr);
     });
