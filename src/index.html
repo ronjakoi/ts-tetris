@@ -5,12 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TS Tetris</title>
-    <script type="module" src="index.js"></script>
+    <script type="module" src="index.ts"></script>
     <link href="https://unpkg.com/bonsai.css@latest/dist/bonsai.min.css" rel="stylesheet">
     <style>
         h1 {
-            color:mediumvioletred;
+            color: mediumvioletred;
         }
+
         canvas {
             border: 1px solid black;
         }
@@ -44,30 +45,35 @@
             height: 60%;
             width: max-content;
         }
+
         #scoreboard {
             grid-area: score;
             margin-right: 1em;
             text-align: right;
         }
+
         #gamecanvas {
             grid-area: playfield;
         }
-        #scoreboard > p {
+
+        #scoreboard>p {
             font-family: 'Courier New', Courier, monospace;
             font-size: 18pt;
             font-weight: bold;
         }
-        #scoreboard > p::before {
+
+        #scoreboard>p::before {
             font-family: 'Courier New', Courier, monospace;
-            font-weight:bolder;
+            font-weight: bolder;
             content: "[ ";
-            color:mediumvioletred;
+            color: mediumvioletred;
         }
-        #scoreboard > p::after {
+
+        #scoreboard>p::after {
             font-family: 'Courier New', Courier, monospace;
-            font-weight:bolder;
+            font-weight: bolder;
             content: " ]";
-            color:mediumvioletred;
+            color: mediumvioletred;
         }
 
         h2 {
@@ -75,7 +81,7 @@
         }
 
         summary {
-            color:mediumvioletred;
+            color: mediumvioletred;
         }
     </style>
 </head>
