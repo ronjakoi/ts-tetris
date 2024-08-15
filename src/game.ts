@@ -158,6 +158,7 @@ export class Game {
             case "ArrowRight":
                 if (this.state != GameState.Running) return;
                 this.move(KEYCODE_TO_MOVE[event.code]);
+                event.preventDefault();
                 break;
             case "ArrowDown":
                 if (this.state != GameState.Running) return;
@@ -165,15 +166,18 @@ export class Game {
                     this.softDrop = true;
                 }
                 if (this.isPieceLanded()) this.lockPiece();
+                event.preventDefault();
                 break;
             case "Space":
                 if (this.state != GameState.Running) return;
                 this.hardDrop();
+                event.preventDefault();
                 break;
             case "ArrowUp":
                 if (this.state != GameState.Running) return;
                 if (!this.currentPiece) return;
                 this.rotate(90);
+                event.preventDefault();
                 break;
             case "KeyZ":
                 if (this.state != GameState.Running) return;
@@ -195,14 +199,7 @@ export class Game {
                 if ([GameState.Menu, GameState.GameOver].includes(this.state)) {
                     this.reset();
                 }
-                break;
-            case "NumpadAdd":
-                this.gravity = Math.min(this.pf.height, this.gravity * 2);
-                console.log(`new gravity: ${this.gravity}`);
-                break;
-            case "NumpadSubtract":
-                this.gravity = Math.max(STARTING_GRAVITY, this.gravity / 2);
-                console.log(`new gravity: ${this.gravity}`);
+                event.preventDefault();
                 break;
         }
     }
@@ -211,6 +208,7 @@ export class Game {
         switch (event.code) {
             case "ArrowDown":
                 this.softDrop = false;
+                event.preventDefault();
                 break;
         }
     }
