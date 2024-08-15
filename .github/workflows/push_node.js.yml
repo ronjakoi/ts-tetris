@@ -1,0 +1,43 @@
+name: Push to master
+
+on:
+  push:
+    branches: ["master"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build --if-present
+      - run: npm test
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tetris-build
+          path: dist/
+          retention-days: 7
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy to website
+    runs-on: ubuntu-latest
+    environment: Kapsi
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - run: >
+        mkdir ~/.ssh/ && \
+        chmod 0700 ~/.ssh && \
+        echo "${{ secrets.SSH_DEPLOY_PRIVATE_KEY }}" > ~/.ssh/id_ed25519 && \
+        chmod 0600 ~/.ssh/id_ed25519
+      - run: >
+        rsync -av --delete-after -e "ssh -i ~/.ssh/id_ed25519" \
+          ./tetris-build/dist/* \
+          "${{ secrets.SSH_DEPLOY_USERNAME }}"@"${{ secrets.SSH_DEPLOY_HOST }}":"${{ env.TETRIS_DEST_DIR }}"/
