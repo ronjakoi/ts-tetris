@@ -268,6 +268,7 @@ export class Game {
                         this.doFall();
                     }
                     this.renderer.drawGame(drawTiles);
+                    this.renderer.drawGuides(drawTiles, this.currentPiece);
                     this.renderer.drawNext(this.nextPiece);
                     break;
                 case GameState.GameOver:

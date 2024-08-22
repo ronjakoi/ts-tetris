@@ -56,6 +56,26 @@ export class Renderer {
         }
     }
 
+    drawGuides(mtx: Drawable, currentPiece: Maybe<Drawable>): void {
+        if(!currentPiece || !currentPiece.position) return;
+
+        this.fieldCtx.strokeStyle = "rgb(255 255 255 / 0.6)";
+        const leftX = currentPiece.position[0] * this.tileSize;
+        if (leftX > 0) {
+            this.fieldCtx.beginPath();
+            this.fieldCtx.moveTo(leftX, 0);
+            this.fieldCtx.lineTo(leftX, mtx.height * this.tileSize);
+            this.fieldCtx.stroke();
+        }
+        const rightX = (currentPiece.position[0] + currentPiece.width) * this.tileSize;
+        if (rightX < mtx.width * this.tileSize) {
+            this.fieldCtx.beginPath();
+            this.fieldCtx.moveTo(rightX, 0);
+            this.fieldCtx.lineTo(rightX, mtx.height * this.tileSize);
+            this.fieldCtx.stroke();
+        }
+    }
+
     drawNext(nextPiece: Maybe<Drawable>): void {
         this.blankCanvas(this.nextCtx);
         if (!nextPiece) return;
