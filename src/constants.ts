@@ -17,12 +17,10 @@ export const CANVAS_COLORS: { [key in Tile]: string } = {
 export const LOCK_DELAY_MS = 500;
 
 export const FRAMES_PER_SECOND = 60;
-// 1 tile / n frames
-export const STARTING_GRAVITY = 1 / 128;
+// tiles per second
+export const STARTING_GRAVITY = 1.5;
 // on level-up, multiply gravity by this:
 export const LEVEL_UP_GRAVITY_FACTOR = 1.4;
-export const SOFTDROP_GRAVITY = 1/8;
-// piece cannot move past the bottom in 1 frame
-export const MAX_GRAVITY = PLAYFIELD_HEIGHT;
+export const SOFTDROP_GRAVITY = STARTING_GRAVITY * 16;
 
 export const LINES_PER_LEVEL = 10;

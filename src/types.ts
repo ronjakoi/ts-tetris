@@ -39,3 +39,48 @@ export enum GameState {
 }
 
 export type Maybe<T> = T | undefined;
+
+/**
+ * Circular buffer of frame times
+ */
+export class MeanBuffer {
+    times: number[];
+    idx: number = 0;
+
+    /**
+     * Create a buffer and initialize with real values.
+     * @param len {number} - Length of buffer
+     */
+    constructor(len: number) {
+        this.times = Array(len);
+        let tmp = performance.now();
+        let count = len;
+        const init = () => {
+            if(count-- > 0) {
+                const now = performance.now();
+                this.push((now - tmp) / 1000);
+                tmp = now;
+                requestAnimationFrame(init);
+            }
+        }
+        requestAnimationFrame(init);
+        console.log(this.times);
+    }
+
+    /**
+     *
+     * @returns {number} The mean of the values in the buffer.
+     */
+    getMean(): number {
+        return this.times.reduce((acc, curr) => acc + curr) / this.times.length;
+    }
+
+    /**
+     *
+     * @param x {number} Push a value into the buffer, replacing older ones.
+     */
+    push(x: number): void {
+        this.times[this.idx] = x;
+        this.idx = (this.idx + 1) % this.times.length;
+    }
+}

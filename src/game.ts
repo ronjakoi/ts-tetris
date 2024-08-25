@@ -17,7 +17,7 @@ import {
     isPieceObstructed,
 } from "./tetromino.js";
 import { Matrix, TileMatrix } from "./tiles.js";
-import { Tile, Vec2, Move, GameState, KEYCODE_TO_MOVE, Maybe } from "./types.js";
+import { Tile, Vec2, Move, GameState, KEYCODE_TO_MOVE, Maybe, MeanBuffer } from "./types.js";
 
 export class Playfield implements Matrix {
     tiles: TileMatrix;
@@ -68,11 +68,13 @@ export class Game {
     state: GameState = GameState.Menu;
     score: number = 0;
     gravity: number = STARTING_GRAVITY;
+    lastFrame: DOMHighResTimeStamp;
     softDrop: boolean = false;
     frameDelay: number = (1 / FRAMES_PER_SECOND) * 0.8;
     lockTimeout: Maybe<NodeJS.Timeout> = undefined;
     level: number = 1;
     levelProgress: number = 0;
+    meanDt: MeanBuffer;
 
     constructor(args: {
         fieldCanvas: HTMLCanvasElement;
@@ -85,6 +87,9 @@ export class Game {
             fieldCanvas: args.fieldCanvas,
             nextCanvas: args.nextCanvas,
         });
+        this.update = this.update.bind(this);
+        this.lastFrame = performance.now();
+        this.meanDt = new MeanBuffer(20);
     }
 
     reset(): void {
@@ -101,6 +106,7 @@ export class Game {
         this.softDrop = false;
         this.renderer.blankCanvas(this.renderer.fieldCtx);
         this.renderer.blankCanvas(this.renderer.nextCtx);
+        this.lastFrame = performance.now();
     }
 
     lockPiece(): void {
@@ -162,7 +168,8 @@ export class Game {
                 break;
             case "ArrowDown":
                 if (this.state != GameState.Running) return;
-                if (this.gravity < 1) {
+                const totalDistance = this.gravity * this.meanDt.getMean();
+                if (totalDistance < 1.0) {
                     this.softDrop = true;
                 }
                 if (this.isPieceLanded()) this.lockPiece();
@@ -213,19 +220,20 @@ export class Game {
         }
     }
 
-    doFall(): void {
+    /**
+     * Performs the effect of gravity on the current tetromino each frame.
+     * @param {number} dt - Δtime in seconds
+     */
+    doFall(dt: number): void {
         if (this.currentPiece === undefined || this.currentPiece.position === undefined) return;
-        if (this.gravity < 1.0) {
-            this.currentPiece.position[1] +=
-                this.softDrop && this.gravity < SOFTDROP_GRAVITY ? SOFTDROP_GRAVITY : this.gravity;
-        } else {
-            const maxRows = Math.floor(this.gravity);
-            let counter;
-            for (counter = 0; counter < maxRows && !this.isPieceLanded(); counter++)
-                this.move(Move.Down);
-            const remainderG = this.gravity - counter;
-            if (!this.isPieceLanded()) this.currentPiece.position[1] += remainderG;
-        }
+        const totalDistance =
+            dt * (this.softDrop ? Math.max(this.gravity, SOFTDROP_GRAVITY) : this.gravity);
+        const maxRows = Math.floor(totalDistance);
+        let counter;
+        for (counter = 0; counter < maxRows && !this.isPieceLanded(); counter++)
+            this.move(Move.Down);
+        const fractionalDistance = totalDistance - counter;
+        if (!this.isPieceLanded()) this.currentPiece.position[1] += fractionalDistance;
     }
 
     maybeNextLevel(lines: number): void {
@@ -233,51 +241,67 @@ export class Game {
         if (this.levelProgress >= LINES_PER_LEVEL) {
             this.level++;
             this.levelProgress = 0;
-            this.gravity = Math.min(this.pf.height, this.gravity * LEVEL_UP_GRAVITY_FACTOR);
+            // piece cannot fall further than the height of the playfield
+            // in one frame
+            const maxGravity = this.pf.height / this.meanDt.getMean();
+            this.gravity = Math.min(maxGravity, this.gravity * LEVEL_UP_GRAVITY_FACTOR);
         }
     }
 
+    /**
+     * Update game state each frame.
+     */
+    update(): void {
+        const now = performance.now();
+        const dt = (now - this.lastFrame) / 1000;
+        this.meanDt.push(dt);
+        this.lastFrame = now;
+        if (this.currentPiece !== undefined && this.currentPiece.position === undefined) {
+            this.currentPiece.position = [
+                Math.floor(this.pf.width / 2 - this.currentPiece.width / 2),
+                0,
+            ];
+        }
+        const drawTiles = this.pf.overlay(this.currentPiece);
+        switch (this.state) {
+            case GameState.Menu:
+                this.renderer.drawMenu();
+                this.renderer.blankCanvas(this.renderer.nextCtx);
+                break;
+            case GameState.Running:
+                if (this.isPieceLanded()) {
+                    if (this.lockTimeout === undefined) {
+                        this.lockTimeout = setTimeout(() => {
+                            // the player can still move the piece to a non-landed
+                            // position during the lock delay, so check again
+                            if (this.isPieceLanded()) this.lockPiece();
+                            // release timeout
+                            clearTimeout(this.lockTimeout);
+                            this.lockTimeout = undefined;
+                        }, LOCK_DELAY_MS);
+                    }
+                } else {
+                    this.doFall(dt);
+                }
+                this.renderer.drawGame(drawTiles);
+                this.renderer.drawGuides(drawTiles, this.currentPiece);
+                this.renderer.drawNext(this.nextPiece);
+                break;
+            case GameState.GameOver:
+                this.renderer.drawTextOverlay(drawTiles, "Game Over");
+                break;
+            case GameState.Paused:
+                this.renderer.drawTextOverlay(drawTiles, "Paused");
+                break;
+        }
+        requestAnimationFrame(this.update);
+    }
+
+    /**
+     * Start the game.
+     */
     play(): void {
         tetrominoFactory.shuffle();
-        setInterval(() => {
-            if (this.currentPiece !== undefined && this.currentPiece.position === undefined) {
-                this.currentPiece.position = [
-                    Math.floor(this.pf.width / 2 - this.currentPiece.width / 2),
-                    0,
-                ];
-            }
-            const drawTiles = this.pf.overlay(this.currentPiece);
-            switch (this.state) {
-                case GameState.Menu:
-                    this.renderer.drawMenu();
-                    this.renderer.blankCanvas(this.renderer.nextCtx);
-                    break;
-                case GameState.Running:
-                    if (this.isPieceLanded()) {
-                        if (this.lockTimeout === undefined) {
-                            this.lockTimeout = setTimeout(() => {
-                                // the player can still move the piece to a non-landed
-                                // position during the lock delay, so check again
-                                if (this.isPieceLanded()) this.lockPiece();
-                                // release timeout
-                                clearTimeout(this.lockTimeout);
-                                this.lockTimeout = undefined;
-                            }, LOCK_DELAY_MS);
-                        }
-                    } else {
-                        this.doFall();
-                    }
-                    this.renderer.drawGame(drawTiles);
-                    this.renderer.drawGuides(drawTiles, this.currentPiece);
-                    this.renderer.drawNext(this.nextPiece);
-                    break;
-                case GameState.GameOver:
-                    this.renderer.drawTextOverlay(drawTiles, "Game Over");
-                    break;
-                case GameState.Paused:
-                    this.renderer.drawTextOverlay(drawTiles, "Paused");
-                    break;
-            }
-        }, this.frameDelay);
+        requestAnimationFrame(this.update);
     }
 }

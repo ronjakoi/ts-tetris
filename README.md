@@ -21,4 +21,3 @@ Licensed under the MIT License, see [LICENSE](LICENSE).
 ## TODO
 
 * Don't draw in a tight loop when in menu or game over screen.
-* Framerate independent mechanics?
