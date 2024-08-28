@@ -11,7 +11,8 @@
   "scripts": {
     "test": "vitest",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev": "vite"
   },
   "type": "module"
 }
