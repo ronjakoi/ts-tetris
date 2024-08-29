@@ -240,7 +240,7 @@ export class Game {
         this.levelProgress += lines;
         if (this.levelProgress >= LINES_PER_LEVEL) {
             this.level++;
-            this.levelProgress = 0;
+            this.levelProgress -= LINES_PER_LEVEL;
             // piece cannot fall further than the height of the playfield
             // in one frame
             const maxGravity = this.pf.height / this.meanDt.getMean();
